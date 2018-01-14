@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<system name="$${FILENAME}">
+ <component
+   name="$${FILENAME}"
+   displayName="$${FILENAME}"
+   version="1.0"
+   description=""
+   tags=""
+   categories="System" />
+ <parameter name="bonusData"><![CDATA[bonusData 
+{
+   element $${FILENAME}
+   {
+   }
+   element Altera_UP_Flash_Memory_IP_Core_Avalon_Interface_0
+   {
+      datum _sortIndex
+      {
+         value = "4";
+         type = "int";
+      }
+   }
+   element video_character_buffer_with_dma_0.avalon_char_buffer_slave
+   {
+      datum baseAddress
+      {
+         value = "167772160";
+         type = "String";
+      }
+   }
+   element video_character_buffer_with_dma_0.avalon_char_control_slave
+   {
+      datum baseAddress
+      {
+         value = "167780352";
+         type = "String";
+      }
+   }
+   element clk_0
+   {
+      datum _sortIndex
+      {
+         value = "0";
+         type = "int";
+      }
+   }
+   element clocks
+   {
+      datum _sortIndex
+      {
+         value = "1";
+         type = "int";
+      }
+   }
+   element Altera_UP_Flash_Memory_IP_Core_Avalon_Interface_0.flash_data
+   {
+      datum baseAddress
+      {
+         value = "130023424";
+         type = "String";
+      }
+   }
+   element Altera_UP_Flash_Memory_IP_Core_Avalon_Interface_0.flash_erase_control
+   {
+      datum _lockedAddress
+      {
+         value = "0";
+         type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "134217728";
+         type = "String";
+      }
+   }
+   element mmix_qsys_0
+   {
+      datum _sortIndex
+      {
+         value = "2";
+         type = "int";
+      }
+   }
+   element sdram
+   {
+      datum _sortIndex
+      {
+         value = "3";
+         type = "int";
+      }
+   }
+   element video_character_buffer_with_dma_0
+   {
+      datum _sortIndex
+      {
+         value = "5";
+         type = "int";
+      }
+   }
+   element video_dual_clock_buffer_0
+   {
+      datum _sortIndex
+      {
+         value = "6";
+         type = "int";
+      }
+   }
+   element video_pll_0
+   {
+      datum _sortIndex
+      {
+         value = "8";
+         type = "int";
+      }
+   }
+   element video_vga_controller_0
+   {
+      datum _sortIndex
+      {
+         value = "7";
+         type = "int";
+      }
+   }
+}
+]]></parameter>
+ <parameter name="clockCrossingAdapter" value="HANDSHAKE" />
+ <parameter name="device" value="EP3C16F484C6" />
+ <parameter name="deviceFamily" value="Cyclone III" />
+ <parameter name="deviceSpeedGrade" value="6" />
+ <parameter name="fabricMode" value="QSYS" />
+ <parameter name="generateLegacySim" value="false" />
+ <parameter name="generationId" value="0" />
+ <parameter name="globalResetBus" value="false" />
+ <parameter name="hdlLanguage" value="VERILOG" />
+ <parameter name="maxAdditionalLatency" value="1" />
+ <parameter name="projectName" value="DE0_MMIX.qpf" />
+ <parameter name="sopcBorderPoints" value="false" />
+ <parameter name="systemHash" value="0" />
+ <parameter name="timeStamp" value="0" />
+ <parameter name="useTestBenchNamingPattern" value="false" />
+ <instanceScript></instanceScript>
+ <interface name="clk" internal="clk_0.clk_in" type="clock" dir="end" />
+ <interface name="reset" internal="clk_0.clk_in_reset" type="reset" dir="end" />
+ <interface name="sdram_wire" internal="sdram.wire" type="conduit" dir="end" />
+ <interface name="sdram_clk" internal="clocks.sdram_clk" type="clock" dir="start" />
+ <interface
+   name="dbg_led"
+   internal="mmix_qsys_0.conduit"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="flash_wire"
+   internal="Altera_UP_Flash_Memory_IP_Core_Avalon_Interface_0.conduit_end"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="vga_wire"
+   internal="video_vga_controller_0.external_interface"
+   type="conduit"
+   dir="end" />
+ <module kind="clock_source" version="13.1" enabled="1" name="clk_0">
+  <parameter name="clockFrequency" value="50000000" />
+  <parameter name="clockFrequencyKnown" value="true" />
+  <parameter name="inputClockFrequency" value="0" />
+  <parameter name="resetSynchronousEdges" value="NONE" />
+ </module>
+ <module kind="mmix_qsys" version="1.0" enabled="1" name="mmix_qsys_0">
+  <parameter name="AUTO_CLK_CLOCK_RATE" value="50000000" />
+ </module>
+ <module
+   kind="altera_avalon_new_sdram_controller"
+   version="13.1"
+   enabled="1"
+   name="sdram">
+  <parameter name="TAC" value="5.5" />
+  <parameter name="TRCD" value="20.0" />
+  <parameter name="TRFC" value="70.0" />
+  <parameter name="TRP" value="20.0" />
+  <parameter name="TWR" value="14.0" />
+  <parameter name="casLatency" value="3" />
+  <parameter name="columnWidth" value="8" />
+  <parameter name="dataWidth" value="16" />
+  <parameter name="generateSimulationModel" value="false" />
+  <parameter name="initRefreshCommands" value="2" />
+  <parameter name="model">single_Micron_MT48LC4M32B2_7_chip</parameter>
+  <parameter name="numberOfBanks" value="4" />
+  <parameter name="numberOfChipSelects" value="1" />
+  <parameter name="pinsSharedViaTriState" value="false" />
+  <parameter name="powerUpDelay" value="100.0" />
+  <parameter name="refreshPeriod" value="15.625" />
+  <parameter name="rowWidth" value="12" />
+  <parameter name="masteredTristateBridgeSlave" value="0" />
+  <parameter name="TMRD" value="3" />
+  <parameter name="initNOPDelay" value="0.0" />
+  <parameter name="registerDataIn" value="true" />
+  <parameter name="clockRate" value="50000000" />
+  <parameter name="componentName" value="$${FILENAME}_sdram" />
+ </module>
+ <module
+   kind="altera_up_avalon_sys_sdram_pll"
+   version="13.1"
+   enabled="1"
+   name="clocks">
+  <parameter name="gui_refclk" value="50.0" />
+  <parameter name="gui_outclk" value="50.0" />
+  <parameter name="CIII_boards" value="DE0" />
+  <parameter name="CIV_boards" value="DE2-115" />
+  <parameter name="CV_boards" value="DE1-SoC" />
+  <parameter name="other_boards" value="None" />
+  <parameter name="device_family" value="Cyclone III" />
+  <parameter name="AUTO_DEVICE" value="EP3C16F484C6" />
+ </module>
+ <module
+   kind="Altera_UP_Flash_Memory_IP_Core_Avalon_Interface"
+   version="13.1"
+   enabled="1"
+   name="Altera_UP_Flash_Memory_IP_Core_Avalon_Interface_0">
+  <parameter name="FLASH_MEMORY_ADDRESS_WIDTH" value="22" />
+  <parameter name="FLASH_MEMORY_WAIT_COUNT" value="5" />
+  <parameter name="AUTO_CLOCK_SINK_CLOCK_RATE" value="50000000" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone III" />
+ </module>
+ <module
+   kind="altera_up_avalon_video_character_buffer_with_dma"
+   version="13.1"
+   enabled="1"
+   name="video_character_buffer_with_dma_0">
+  <parameter name="vga_device" value="On-board VGA DAC" />
+  <parameter name="enable_transparency" value="false" />
+  <parameter name="color_bits" value="1-bit" />
+  <parameter name="resolution" value="80 x 60" />
+  <parameter name="AUTO_CLOCK_RESET_CLOCK_RATE" value="50000000" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone III" />
+ </module>
+ <module
+   kind="altera_up_avalon_video_dual_clock_buffer"
+   version="13.1"
+   enabled="1"
+   name="video_dual_clock_buffer_0">
+  <parameter name="color_bits" value="10" />
+  <parameter name="color_planes" value="3" />
+  <parameter name="AUTO_CLOCK_STREAM_IN_CLOCK_RATE" value="50000000" />
+  <parameter name="AUTO_CLOCK_STREAM_OUT_CLOCK_RATE" value="25000000" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone III" />
+ </module>
+ <module
+   kind="altera_up_avalon_video_vga_controller"
+   version="13.1"
+   enabled="1"
+   name="video_vga_controller_0">
+  <parameter name="board" value="DE0" />
+  <parameter name="device" value="VGA Connector" />
+  <parameter name="resolution" value="VGA 640x480" />
+  <parameter name="underflow_flag" value="false" />
+  <parameter name="AUTO_CLOCK_RESET_CLOCK_RATE" value="25000000" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone III" />
+ </module>
+ <module
+   kind="altera_up_avalon_video_pll"
+   version="13.1"
+   enabled="1"
+   name="video_pll_0">
+  <parameter name="gui_refclk" value="50.0" />
+  <parameter name="video_in_clk_en" value="false" />
+  <parameter name="camera" value="5MP Digital Camera" />
+  <parameter name="vga_clk_en" value="true" />
+  <parameter name="gui_resolution" value="VGA 640x480" />
+  <parameter name="lcd_clk_en" value="false" />
+  <parameter name="lcd">7" LCD on VEEK-MT and MTL Module</parameter>
+  <parameter name="device_family" value="Cyclone III" />
+  <parameter name="AUTO_DEVICE" value="EP3C16F484C6" />
+ </module>
+ <connection kind="clock" version="13.1" start="clk_0.clk" end="clocks.ref_clk" />
+ <connection
+   kind="clock"
+   version="13.1"
+   start="clocks.sys_clk"
+   end="mmix_qsys_0.clk" />
+ <connection kind="clock" version="13.1" start="clocks.sys_clk" end="sdram.clk" />
+ <connection
+   kind="reset"
+   version="13.1"
+   start="clk_0.clk_reset"
+   end="clocks.ref_reset" />
+ <connection
+   kind="reset"
+   version="13.1"
+   start="clk_0.clk_reset"
+   end="mmix_qsys_0.reset_n" />
+ <connection kind="reset" version="13.1" start="clk_0.clk_reset" end="sdram.reset" />
+ <connection
+   kind="avalon"
+   version="13.1"
+   start="mmix_qsys_0.master"
+   end="sdram.s1">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="13.1"
+   start="mmix_qsys_0.master"
+   end="Altera_UP_Flash_Memory_IP_Core_Avalon_Interface_0.flash_data">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x07c00000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="13.1"
+   start="mmix_qsys_0.master"
+   end="Altera_UP_Flash_Memory_IP_Core_Avalon_Interface_0.flash_erase_control">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x08000000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="clock"
+   version="13.1"
+   start="clocks.sys_clk"
+   end="Altera_UP_Flash_Memory_IP_Core_Avalon_Interface_0.clock_sink" />
+ <connection
+   kind="reset"
+   version="13.1"
+   start="clk_0.clk_reset"
+   end="Altera_UP_Flash_Memory_IP_Core_Avalon_Interface_0.clock_sink_reset" />
+ <connection
+   kind="clock"
+   version="13.1"
+   start="clocks.sys_clk"
+   end="video_character_buffer_with_dma_0.clock_reset" />
+ <connection
+   kind="reset"
+   version="13.1"
+   start="clk_0.clk_reset"
+   end="video_character_buffer_with_dma_0.clock_reset_reset" />
+ <connection
+   kind="avalon"
+   version="13.1"
+   start="mmix_qsys_0.master"
+   end="video_character_buffer_with_dma_0.avalon_char_control_slave">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0a002000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="13.1"
+   start="mmix_qsys_0.master"
+   end="video_character_buffer_with_dma_0.avalon_char_buffer_slave">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0a000000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon_streaming"
+   version="13.1"
+   start="video_character_buffer_with_dma_0.avalon_char_source"
+   end="video_dual_clock_buffer_0.avalon_dc_buffer_sink" />
+ <connection
+   kind="clock"
+   version="13.1"
+   start="clocks.sys_clk"
+   end="video_dual_clock_buffer_0.clock_stream_in" />
+ <connection
+   kind="reset"
+   version="13.1"
+   start="clk_0.clk_reset"
+   end="video_dual_clock_buffer_0.clock_stream_in_reset" />
+ <connection
+   kind="avalon_streaming"
+   version="13.1"
+   start="video_dual_clock_buffer_0.avalon_dc_buffer_source"
+   end="video_vga_controller_0.avalon_vga_sink" />
+ <connection
+   kind="clock"
+   version="13.1"
+   start="video_pll_0.vga_clk"
+   end="video_dual_clock_buffer_0.clock_stream_out" />
+ <connection
+   kind="reset"
+   version="13.1"
+   start="video_pll_0.reset_source"
+   end="video_dual_clock_buffer_0.clock_stream_out_reset" />
+ <connection
+   kind="clock"
+   version="13.1"
+   start="video_pll_0.vga_clk"
+   end="video_vga_controller_0.clock_reset" />
+ <connection
+   kind="reset"
+   version="13.1"
+   start="video_pll_0.reset_source"
+   end="video_vga_controller_0.clock_reset_reset" />
+ <connection
+   kind="clock"
+   version="13.1"
+   start="clocks.sys_clk"
+   end="video_pll_0.ref_clk" />
+ <connection
+   kind="reset"
+   version="13.1"
+   start="clk_0.clk_reset"
+   end="video_pll_0.ref_reset" />
+ <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />
+ <interconnectRequirement for="$system" name="qsys_mm.maxAdditionalLatency" value="1" />
+ <interconnectRequirement for="$system" name="qsys_mm.insertDefaultSlave" value="false" />
+</system>

@@ -1,0 +1,16 @@
+*.bak
+*.rpt
+DE0_MMIX.qws
+DE0_MMIX.sdc
+MMIX_system.cmp
+MMIX_system.html
+MemoryMap.txt
+PLLJ_PLLSPE_INFO.txt
+flash.bin
+vsim.wlf
+.qsys_edit
+db
+incremental_db
+output_files
+simulation
+work
