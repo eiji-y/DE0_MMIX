@@ -237,7 +237,13 @@ inout	[31:0]	GPIO1_D;				//	GPIO Connection 1 Data Bus
         .vga_wire_VS      (VGA_VS),      //           .VS
         .vga_wire_R       (VGA_R),       //           .R
         .vga_wire_G       (VGA_G),       //           .G
-        .vga_wire_B       (VGA_B)        //           .B
-    );
+        .vga_wire_B       (VGA_B),       //           .B
+        .ps2_wire_CLK            (PS2_KBCLK),            //     ps2_wire.CLK
+        .ps2_wire_DAT            (PS2_KBDAT),            //             .DAT
+        .sd_card_wire_b_SD_cmd   (SD_CMD),   // sd_card_wire.b_SD_cmd
+        .sd_card_wire_b_SD_dat   (SD_DAT0),   //             .b_SD_dat
+        .sd_card_wire_b_SD_dat3  (SD_DAT3),  //             .b_SD_dat3
+        .sd_card_wire_o_SD_clock (SD_CLK)  //             .o_SD_clock
+	 );
 
 endmodule

@@ -20,6 +20,14 @@
          type = "int";
       }
    }
+   element Altera_UP_SD_Card_Avalon_Interface_0
+   {
+      datum _sortIndex
+      {
+         value = "10";
+         type = "int";
+      }
+   }
    element video_character_buffer_with_dma_0.avalon_char_buffer_slave
    {
       datum baseAddress
@@ -33,6 +41,27 @@
       datum baseAddress
       {
          value = "167780352";
+         type = "String";
+      }
+   }
+   element ps2_0.avalon_ps2_slave
+   {
+      datum _tags
+      {
+         value = "";
+         type = "String";
+      }
+      datum baseAddress
+      {
+         value = "150994944";
+         type = "String";
+      }
+   }
+   element Altera_UP_SD_Card_Avalon_Interface_0.avalon_sdcard_slave
+   {
+      datum baseAddress
+      {
+         value = "184549376";
          type = "String";
       }
    }
@@ -78,6 +107,14 @@
       datum _sortIndex
       {
          value = "2";
+         type = "int";
+      }
+   }
+   element ps2_0
+   {
+      datum _sortIndex
+      {
+         value = "9";
          type = "int";
       }
    }
@@ -156,6 +193,16 @@
  <interface
    name="vga_wire"
    internal="video_vga_controller_0.external_interface"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="ps2_wire"
+   internal="ps2_0.external_interface"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="sd_card_wire"
+   internal="Altera_UP_SD_Card_Avalon_Interface_0.conduit_end"
    type="conduit"
    dir="end" />
  <module kind="clock_source" version="13.1" enabled="1" name="clk_0">
@@ -269,6 +316,20 @@
   <parameter name="lcd">7" LCD on VEEK-MT and MTL Module</parameter>
   <parameter name="device_family" value="Cyclone III" />
   <parameter name="AUTO_DEVICE" value="EP3C16F484C6" />
+ </module>
+ <module kind="altera_up_avalon_ps2" version="13.1" enabled="1" name="ps2_0">
+  <parameter name="avalon_bus_type" value="Memory Mapped" />
+  <parameter name="clk_rate" value="50000000" />
+  <parameter name="AUTO_CLOCK_RESET_CLOCK_RATE" value="50000000" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone III" />
+ </module>
+ <module
+   kind="Altera_UP_SD_Card_Avalon_Interface"
+   version="13.1"
+   enabled="1"
+   name="Altera_UP_SD_Card_Avalon_Interface_0">
+  <parameter name="AUTO_CLOCK_SINK_CLOCK_RATE" value="50000000" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone III" />
  </module>
  <connection kind="clock" version="13.1" start="clk_0.clk" end="clocks.ref_clk" />
  <connection
@@ -403,6 +464,51 @@
    version="13.1"
    start="clk_0.clk_reset"
    end="video_pll_0.ref_reset" />
+ <connection
+   kind="clock"
+   version="13.1"
+   start="clocks.sys_clk"
+   end="ps2_0.clock_reset" />
+ <connection
+   kind="reset"
+   version="13.1"
+   start="clk_0.clk_reset"
+   end="ps2_0.clock_reset_reset" />
+ <connection
+   kind="avalon"
+   version="13.1"
+   start="mmix_qsys_0.master"
+   end="ps2_0.avalon_ps2_slave">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x09000000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="interrupt"
+   version="13.1"
+   start="mmix_qsys_0.d_irq"
+   end="ps2_0.interrupt">
+  <parameter name="irqNumber" value="0" />
+ </connection>
+ <connection
+   kind="clock"
+   version="13.1"
+   start="clocks.sys_clk"
+   end="Altera_UP_SD_Card_Avalon_Interface_0.clock_sink" />
+ <connection
+   kind="reset"
+   version="13.1"
+   start="clk_0.clk_reset"
+   end="Altera_UP_SD_Card_Avalon_Interface_0.clock_sink_reset" />
+ <connection
+   kind="avalon"
+   version="13.1"
+   start="mmix_qsys_0.master"
+   end="Altera_UP_SD_Card_Avalon_Interface_0.avalon_sdcard_slave">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0b000000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
  <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />
  <interconnectRequirement for="$system" name="qsys_mm.maxAdditionalLatency" value="1" />
  <interconnectRequirement for="$system" name="qsys_mm.insertDefaultSlave" value="false" />

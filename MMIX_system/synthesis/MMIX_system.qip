@@ -2,7 +2,7 @@ set_global_assignment -entity "MMIX_system" -library "MMIX_system" -name IP_TOOL
 set_global_assignment -entity "MMIX_system" -library "MMIX_system" -name IP_TOOL_VERSION "13.1"
 set_global_assignment -entity "MMIX_system" -library "MMIX_system" -name IP_TOOL_ENV "Qsys"
 set_global_assignment -library "MMIX_system" -name SOPCINFO_FILE [file join $::quartus(qip_path) "../../MMIX_system.sopcinfo"]
-set_global_assignment -entity "MMIX_system" -library "MMIX_system" -name SLD_INFO "QSYS_NAME MMIX_system HAS_SOPCINFO 1 GENERATION_ID 1513163110"
+set_global_assignment -entity "MMIX_system" -library "MMIX_system" -name SLD_INFO "QSYS_NAME MMIX_system HAS_SOPCINFO 1 GENERATION_ID 1516026210"
 set_global_assignment -library "MMIX_system" -name MISC_FILE [file join $::quartus(qip_path) "../../MMIX_system.cmp"]
 set_global_assignment -library "MMIX_system" -name SLD_FILE [file join $::quartus(qip_path) "MMIX_system.debuginfo"]
 set_global_assignment -name SYNTHESIS_ONLY_QIP ON
@@ -35,6 +35,24 @@ set_global_assignment -library "MMIX_system" -name SYSTEMVERILOG_FILE [file join
 set_global_assignment -library "MMIX_system" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_merlin_master_agent.sv"]
 set_global_assignment -library "MMIX_system" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_merlin_slave_translator.sv"]
 set_global_assignment -library "MMIX_system" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_merlin_master_translator.sv"]
+set_global_assignment -library "MMIX_system" -name VHDL_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Card_Avalon_Interface.vhd"]
+set_global_assignment -library "MMIX_system" -name VHDL_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Card_48_bit_Command_Generator.vhd"]
+set_global_assignment -library "MMIX_system" -name VHDL_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Card_Buffer.vhd"]
+set_global_assignment -library "MMIX_system" -name VHDL_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Card_Clock.vhd"]
+set_global_assignment -library "MMIX_system" -name VHDL_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Card_Control_FSM.vhd"]
+set_global_assignment -library "MMIX_system" -name VHDL_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Card_Interface.vhd"]
+set_global_assignment -library "MMIX_system" -name QIP_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Card_Memory_Block.qip"]
+set_global_assignment -library "MMIX_system" -name VHDL_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Card_Response_Receiver.vhd"]
+set_global_assignment -library "MMIX_system" -name VHDL_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_CRC16_Generator.vhd"]
+set_global_assignment -library "MMIX_system" -name VHDL_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_CRC7_Generator.vhd"]
+set_global_assignment -library "MMIX_system" -name VHDL_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Signal_Trigger.vhd"]
+set_global_assignment -library "MMIX_system" -name VHDL_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Card_Memory_Block.vhd"]
+set_global_assignment -library "MMIX_system" -name SOURCE_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Card_Memory_Block.bsf"]
+set_global_assignment -library "MMIX_system" -name SOURCE_FILE [file join $::quartus(qip_path) "submodules/Altera_UP_SD_Card_Memory_Block.cmp"]
+set_global_assignment -library "MMIX_system" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_up_ps2.v"]
+set_global_assignment -library "MMIX_system" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_up_ps2_command_out.v"]
+set_global_assignment -library "MMIX_system" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_up_ps2_data_in.v"]
+set_global_assignment -library "MMIX_system" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/MMIX_system_ps2_0.v"]
 set_global_assignment -library "MMIX_system" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/MMIX_system_video_pll_0.v"]
 set_global_assignment -library "MMIX_system" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_up_avalon_reset_from_locked_signal.v"]
 set_global_assignment -library "MMIX_system" -name VERILOG_FILE [file join $::quartus(qip_path) "submodules/altera_up_altpll.v"]
