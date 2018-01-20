@@ -308,8 +308,8 @@ module al_unit(
 							end
 						end
 					pop: begin
-							data.x.o = data.y.o;
-							data.y.o = data.b.o;
+							data.x.o = operands.y.o;
+							//data.y.o = data.b.o;
 							data.go.o = operands.b.o + operands.z.o;
 							if (data.go.o[63] && !data.loc[63])
 								data.interrupt[P_BIT] = 1;
