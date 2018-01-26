@@ -59,7 +59,6 @@ module cpu(
 	///////
 	
 	logic [63:0]	next_addr;
-	logic	ctl_change; // = 0;
 	logic fetch_done;
 	logic	no_fetch;
 	fetch	f_head;
@@ -72,8 +71,7 @@ module cpu(
 		.clk,
 		.reset_n,
 		.enable			(fu_enable),
-		.ctl_change,
-		.next_addr,
+		.inst_ptr		(next_addr),
 		.fetch_done,
 
 		.head				(f_head),
@@ -93,9 +91,6 @@ module cpu(
 	wire[7:0]	new_G, new_L;
 	wire[61:0]	new_O, new_S;
 	
-	logic			dec_ctl_change;
-	logic[63:0]	dec_inst_ptr;
-	
 	fetch		head;
 	control dec_data;
 	control data;
@@ -113,9 +108,6 @@ module cpu(
 		.new_L,
 		.new_O, .new_S,
 
-		.ctl_change	(dec_ctl_change),
-		.inst_ptr	(dec_inst_ptr),
-		
 		.data			(dec_data),
 		.operands
 	);
@@ -125,9 +117,6 @@ module cpu(
 	
 	control		ex1_data;
 	
-	logic			ex1_ctl_change;
-	logic[63:0]	ex1_new_inst_ptr;
-
 	wire [63:0]	ex1_mem_address;
 	wire [1:0]	ex1_mem_datasize;
 	wire			ex1_mem_read;
@@ -149,9 +138,6 @@ module cpu(
 		
 		.new_G,
 		.data_out		(ex1_data),
-		
-		.ctl_change		(ex1_ctl_change),
-		.new_inst_ptr	(ex1_new_inst_ptr),
 		
 		.mem_address	(ex1_mem_address),
 		.mem_datasize	(ex1_mem_datasize),	// 0: byte, 1: wyde, 2: tetra, 3: octa
@@ -217,8 +203,7 @@ module cpu(
 					O <= 0;
 					S <= 0;
 					stage <= S_IFETCH;
-					ctl_change = 0;
-					next_addr = 0;
+					next_addr = 64'h8000fffffffffffc;
 				end
 			S_IFETCH:
 				begin
@@ -229,9 +214,6 @@ module cpu(
 			S_DISPATCH:
 				begin
 					if (~stall) begin
-						ctl_change = dec_ctl_change;
-						next_addr = dec_inst_ptr;
-					
 						stage <= S_EXEC;
 						data <= dec_data;
 						no_fetch <= dec_data.interim;
@@ -275,10 +257,7 @@ module cpu(
 			S_EXEC:
 				begin
 					if (ex1_done) begin
-						if (ex1_ctl_change) begin
-							ctl_change <= 1;
-							next_addr <= ex1_new_inst_ptr;
-						end
+						next_addr <= ex1_data.go.o;
 						
 						G <= new_G;
 						data <= ex1_data;

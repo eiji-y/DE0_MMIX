@@ -34,9 +34,6 @@ module inst_decoder(
 	output logic[7:0]		new_L,
 	output logic[61:0]	new_O, new_S,
 
-	output logic			ctl_change,
-	output logic[63:0]	inst_ptr,
-	
 	output control			data,
 	input  values			operands
 	);
@@ -96,11 +93,11 @@ module inst_decoder(
 		1, 1, 1, 1, 1, 1, 1, 1, // LDB, LDBI, LDBU, LDBUI, LDW, LDWI, LDWU, LDWUI,
 		1, 1, 1, 1, 1, 1, 1, 1, // LDT, LDTI, LDTU, LDTUI, LDO, LDOI, LDOU, LDOUI,
 		0, 0, 0, 0, 0, 0, 0, 0, // LDSF, LDSFI, LDHT, LDHTI, CSWAP, CSWAPI, LDUNC, LDUNCI,
-		0, 0, 0, 0, 0, 0, 0, 0, // LDVTS, LDVTSI, PRELD, PRELDI, PREGO, PREGOI, GO, GOI,
+		0, 0, 0, 0, 0, 0, 1, 1, // LDVTS, LDVTSI, PRELD, PRELDI, PREGO, PREGOI, GO, GOI,
 		1, 1, 1, 1, 1, 1, 1, 1, // STB, STBI, STBU, STBUI, STW, STWI, STWU, STWUI,
 		1, 1, 1, 1, 1, 1, 1, 1, // STT, STTI, STTU, STTUI, STO, STOI, STOU, STOUI,
 		0, 0, 0, 0, 1, 1, 0, 0, // STSF, STSFI, STHT, STHTI, STCO, STCOI, STUNC, STUNCI,
-		0, 0, 0, 0, 0, 0, 0, 0, // SYNCD, SYNCDI, PREST, PRESTI, SYNCID, SYNCIDI, PUSHGO, PUSHGOI,
+		0, 0, 0, 0, 0, 0, 1, 1, // SYNCD, SYNCDI, PREST, PRESTI, SYNCID, SYNCIDI, PUSHGO, PUSHGOI,
 		1, 1, 1, 1, 1, 1, 1, 1, // OR, ORI, ORN, ORNI, NOR, NORI, XOR, XORI,
 		1, 1, 1, 1, 1, 1, 1, 1, // AND, ANDI, ANDN, ANDNI, NAND, NANDI, NXOR, NXORI,
 		0, 0, 0, 0, 0, 0, 0, 0, // BDIF, BDIFI, WDIF, WDIFI, TDIF, TDIFI, ODIF, ODIFI,
@@ -258,24 +255,24 @@ module inst_decoder(
 		//if (head->noted) peek_hist=head->hist;
 		//else
 		// @<Redirect the fetch if control changes at this inst@>=
-		ctl_change = 0;
-		inst_ptr = 0;
-		if (f & ctl_change_bit) begin
-			case (i)
-			jmp, br, pbr, pushj: begin
-					ctl_change = 1;
-					inst_ptr = zz_z.o;
-				end
-			pop: begin
-					ctl_change = 1;
-					inst_ptr = J + (head.inst[15:0] << 2);
-				end
-//			go, pushgo, trap, resume, syncid:
-//				stage <= S_HALT;
-//			trip:
-//				stage <= S_HALT;					
-			endcase
-		end
+//		ctl_change = 0;
+//		inst_ptr = 0;
+//		if (f & ctl_change_bit) begin
+//			case (i)
+//			jmp, br, pbr, pushj: begin
+//					ctl_change = 1;
+//					inst_ptr = zz_z.o;
+//				end
+//			pop: begin
+//					ctl_change = 1;
+//					inst_ptr = J + (head.inst[15:0] << 2);
+//				end
+////			go, pushgo, trap, resume, syncid:
+////				stage <= S_HALT;
+////			trip:
+////				stage <= S_HALT;					
+//			endcase
+//		end
 		
 		if (f & X_is_dest_bit) begin
 			if (data.xx >= G) begin
@@ -418,7 +415,7 @@ module inst_decoder(
 						endcase
 					end
 				end
-			pushj: begin
+			pushgo, pushj: begin
 				if ((data.xx >= G) && (((S - O - L - 1) & lring_mask) == 0)) begin
 			      data.need_b = 0;
 					data.need_ra = 0;

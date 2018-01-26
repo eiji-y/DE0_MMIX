@@ -39,9 +39,6 @@ module exec_unit (
 	
 	output logic[7:0]		new_G,
 	
-	output logic			ctl_change,
-	output logic[63:0]	new_inst_ptr,
-
 	output logic[63:0]	mem_address,
 	output logic[1:0]		mem_datasize,	// 0: byte, 1: wyde, 2: tetra, 3: octa
 	output logic			mem_read,
@@ -89,9 +86,6 @@ module exec_unit (
 		
 		// result
 		.data_out	(lsu_data),
-		
-		.ctl_change,
-		.new_inst_ptr,
 		
 		// memory
 		.mem_address,
@@ -228,8 +222,27 @@ module al_unit(
 								data.x.o = 0;
 						end
 						
+					br, pbr: begin
+							if (register_truth(operands.b.o, data.op))
+								data.go.o = operands.z.o;
+							else
+								data.go.o = operands.y.o;
+								
+							//inst_ptr.o = data.go.o;
+							//inst_ptr.p = 0;
+							
+							if (!data.loc[63]) begin
+								if (data.go.o[63])
+									data.interrupt[P_BIT] = 1;
+								else
+									data.interrupt[P_BIT] = 0;
+							end
+						end
 					incrl, unsave: begin
 							data.x.o = data.x.o;
+						end
+					jmp, pushj: begin
+							data.go.o = operands.z.o;
 						end
 					get: begin
 							//if (data->zz >= 21 || data->zz == rK
@@ -314,6 +327,14 @@ module al_unit(
 							if (data.go.o[63] && !data.loc[63])
 								data.interrupt[P_BIT] = 1;
 						end
+					go, pushgo: begin
+							if (data.i == go) begin
+								data.x.o = data.go.o;
+							end
+							data.go.o = operands.y.o + operands.z.o;
+							if (data.go.o[63] && !data.loc[63])
+								data.interrupt[P_BIT] = 1;
+						end
 					default: begin
 							done = 0;
 						end
@@ -327,6 +348,31 @@ module al_unit(
 		end
 	end
 	
+
+	function logic register_truth(input [63:0] o, input [7:0] op);
+		logic b;
+		
+		case (op[2:1])
+		0: begin	// BN: branch if negative
+				b = o[63];
+			end
+		1: begin	// BZ: branch if zero
+				b = ~|o;
+			end
+		2: begin	// BP: branch if positive
+				b = ~o[63] & |o[62:0];
+			end
+		3: begin	// BOD: branch if odd
+				b = o[0];
+			end
+		endcase
+		
+		if (op[3])
+			register_truth = b ^ 1;
+		else
+			register_truth = b;
+	endfunction
+
 endmodule
 
 module ld_st_unit(
@@ -341,9 +387,6 @@ module ld_st_unit(
 	
 	// output
 	output control			data_out,
-	
-	output logic			ctl_change,
-	output logic[63:0]	new_inst_ptr,
 	
 	// memory
 	output logic[63:0]	mem_address,
@@ -393,8 +436,6 @@ module ld_st_unit(
 		data = data_in;
 		data.owner = 0;
 		done = 0;
-		new_inst_ptr = 0;
-		ctl_change = 0;
 		
 		case (state)
 		S_RESET: begin
@@ -414,32 +455,6 @@ module ld_st_unit(
 							next_state = S_MEMWRITE;
 						end
 						
-					br: begin
-							if (register_truth(operands.b.o, data.op))
-								data.go.o = operands.z.o;
-							else
-								data.go.o = operands.y.o;
-								
-							//inst_ptr.o = data.go.o;
-							//inst_ptr.p = 0;
-							new_inst_ptr = data.go.o;
-							ctl_change = 1;
-							
-							if (!data.loc[63]) begin
-								if (data.go.o[63])
-									data.interrupt[P_BIT] = 1;
-								else
-									data.interrupt[P_BIT] = 0;
-							end
-							
-							done = 1;
-							next_state = S_IDLE;
-						end
-						
-					jmp, pushj: begin
-							done = 1;
-							next_state = S_IDLE;
-						end
 					decgamma, unsav: begin
 							next_state = S_MEMREAD;
 						end
@@ -521,30 +536,5 @@ module ld_st_unit(
 		else
 			state <= next_state;
 	end
-
-
-	function logic register_truth(input [63:0] o, input [7:0] op);
-		logic b;
-		
-		case (op[2:1])
-		0: begin	// BN: branch if negative
-				b = o[63];
-			end
-		1: begin	// BZ: branch if zero
-				b = ~|o;
-			end
-		2: begin	// BP: branch if positive
-				b = ~o[63] & |o[62:0];
-			end
-		3: begin	// BOD: branch if odd
-				b = o[0];
-			end
-		endcase
-		
-		if (op[3])
-			register_truth = b ^ 1;
-		else
-			register_truth = b;
-	endfunction
 
 endmodule
