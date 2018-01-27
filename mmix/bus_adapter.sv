@@ -59,7 +59,7 @@ module bus_adapter(
 	assign d_writedata = octa_swap(i_writedata);
 							
 	assign d_address = {mem_address[48], mem_address[26:3], 3'b000};
-	assign i_request = (i_state != 2);
+	assign i_request = ~i_state[1];
 	assign d_read = mem_read & i_request;
 	assign d_write = mem_write & i_request;
 	assign d_byteenable = i_byteenable;
