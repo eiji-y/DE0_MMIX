@@ -455,6 +455,10 @@ module ld_st_unit(
 							next_state = S_MEMWRITE;
 						end
 						
+					syncd: begin
+						done = 1;
+						end
+						
 					decgamma, unsav: begin
 							next_state = S_MEMREAD;
 						end
