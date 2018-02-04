@@ -33,7 +33,8 @@ module regfile(
 	input regwrite		gregw,
 	input regwrite		lregw,
 	
-	output[63:0]		J
+	output[63:0]		J,
+	output[63:0]		P
 	);
 	
 	logic			gy_valid, gz_valid, gb_valid, gra_valid;
@@ -51,6 +52,7 @@ module regfile(
 	logic[63:0] lregwd;
 	
 	logic[63:0]	gJ;
+	logic[63:0] gP;
 	
 	regs greg(
 		.clk (clk),
@@ -120,6 +122,7 @@ module regfile(
 	assign lregwd = lregw.data;
 	
 	assign J = gJ;
+	assign P = gP;
 
 	always_comb begin
 		if (y.src[0])
@@ -151,11 +154,15 @@ module regfile(
 			ra_val = '{ ra.o, 1 };
 	end
 	
-	always_ff @(posedge clk) begin
-		if (clk) begin
+	always_ff @(posedge clk, negedge reset_n) begin
+		if (reset_n == 0) begin
+			gJ <= 0;
+			gP <= 0;
+		end else begin
 			if (gregwe) begin
 				case (gregwa)
-				rJ: gJ = gregwd;
+				rJ: gJ <= gregwd;
+				rP: gP <= gregwd;
 				endcase
 			end
 		end

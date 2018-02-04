@@ -55,6 +55,7 @@ module cpu(
 	reg [7:0]  L;
 	
 	logic[63:0]	J;
+	logic[63:0] P;
 	
 	///////
 	
@@ -133,6 +134,7 @@ module cpu(
 		
 		.G, .L,
 		.O, .S,
+		.P,
 		
 		.done			(ex1_done),
 		
@@ -165,7 +167,8 @@ module cpu(
 		.ra_val	(operands.ra),
 
 		.gregw, .lregw,
-		.J
+		.J,
+		.P
 	);
 	
 	led led0(
@@ -207,9 +210,10 @@ module cpu(
 				end
 			S_IFETCH:
 				begin
-					if (fetch_done)
+					if (fetch_done) begin
 						stage <= S_DISPATCH;
 						head <= f_head;
+					end
 				end
 			S_DISPATCH:
 				begin

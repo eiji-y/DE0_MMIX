@@ -33,6 +33,7 @@ module exec_unit (
 	
 	input  logic[7:0]		G, L,
 	input  logic[61:0]	O, S,
+	input  logic[63:0]	P,
 	
 	output logic			done,
 	output control			data_out,
@@ -81,6 +82,7 @@ module exec_unit (
 		.enable,
 		
 		.G,
+		.P,
 		.data_in		(data),
 		.operands,
 		
@@ -381,6 +383,7 @@ module ld_st_unit(
 	input  logic		enable,
 	
 	input  logic[7:0]		G,
+	input  logic[63:0]	P,
 
 	input  control			data_in,
 	input  values			operands,
@@ -415,7 +418,7 @@ module ld_st_unit(
 	
 	assign mem_read = ((state == S_MEMREAD) || (next_state == S_MEMREAD))
 								&& operands.y.valid && operands.z.valid;
-	assign mem_write = ((state == S_MEMWRITE) || (next_state == S_MEMWRITE))
+	assign mem_write = ((state == S_MEMWRITE) || (next_state == S_MEMWRITE)) && (state != S_MEMREAD)
 								&& operands.y.valid && operands.z.valid && operands.b.valid;
 	
 	assign mem_address = operands.y.o + operands.z.o;
@@ -454,6 +457,9 @@ module ld_st_unit(
 					pst: begin
 							next_state = S_MEMWRITE;
 						end
+					cswap: begin
+							next_state = S_MEMREAD;
+						end
 						
 					syncd: begin
 						done = 1;
@@ -477,6 +483,9 @@ module ld_st_unit(
 						(STT>>1):
 							if (operands.b.o[63:32] != 0)
 								data.interrupt[V_BIT] = 1;
+						(CSWAP>>1):
+							//if (mem_readdata == P)
+								data.a.o = 1;
 					endcase
 					
 					done = 1;
@@ -523,10 +532,25 @@ module ld_st_unit(
 									data.interrupt[B_BIT] = 1;
 							end
 						end
+							
 					endcase
 					
-					done = 1;
-					next_state = S_IDLE;
+					if (data.i == cswap) begin
+						if (mem_readdata == P) begin
+//							data.a.o = 1;
+							next_state = S_MEMWRITE;
+						end else begin
+							data.ren_x = 1;
+							data.x = '{mem_readdata, 1, 2'b01, rP };
+
+							done = 1;
+							next_state = S_IDLE;
+						end
+					end else begin
+						done = 1;
+						next_state = S_IDLE;
+					end
+					
 				end else begin
 					next_state = S_MEMREAD;
 				end

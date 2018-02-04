@@ -92,7 +92,7 @@ module inst_decoder(
 		0, 0, 0, 0, 0, 0, 0, 0, // ZSNN, ZSNNI, ZSNZ, ZSNZI, ZSNP, ZSNPI, ZSEV, ZSEVI,
 		1, 1, 1, 1, 1, 1, 1, 1, // LDB, LDBI, LDBU, LDBUI, LDW, LDWI, LDWU, LDWUI,
 		1, 1, 1, 1, 1, 1, 1, 1, // LDT, LDTI, LDTU, LDTUI, LDO, LDOI, LDOU, LDOUI,
-		0, 0, 0, 0, 0, 0, 0, 0, // LDSF, LDSFI, LDHT, LDHTI, CSWAP, CSWAPI, LDUNC, LDUNCI,
+		0, 0, 0, 0, 1, 1, 0, 0, // LDSF, LDSFI, LDHT, LDHTI, CSWAP, CSWAPI, LDUNC, LDUNCI,
 		0, 0, 0, 0, 0, 0, 1, 1, // LDVTS, LDVTSI, PRELD, PRELDI, PREGO, PREGOI, GO, GOI,
 		1, 1, 1, 1, 1, 1, 1, 1, // STB, STBI, STBU, STBUI, STW, STWI, STWU, STWUI,
 		1, 1, 1, 1, 1, 1, 1, 1, // STT, STTI, STTU, STTUI, STO, STOI, STOU, STOUI,
@@ -368,6 +368,14 @@ module inst_decoder(
 			end
 
 			case (i)
+			cswap: begin
+					data.ren_a = 1;
+					if (data.xx >= G)
+						data.a = '{ 0, 0, 1, data.xx };
+					else
+						data.a = '{ 0, 0, 2, (O + data.xx) & lring_mask };
+					//data.i = pst;
+				end
 			st:
 				begin
 					
