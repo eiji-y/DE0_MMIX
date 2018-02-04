@@ -139,7 +139,7 @@ module al_unit(
 		end else begin
 			done = 0;
 			if (enable) begin
-				if (operands.y.valid && operands.z.valid) begin
+				if (operands.y.valid && operands.z.valid && operands.b.valid) begin
 					done = 1;
 					case (data.i)
 					set: begin
@@ -223,6 +223,14 @@ module al_unit(
 							else
 								data.x.o = 0;
 						end
+						
+					cset: begin
+							if (register_truth(operands.y.o, data.op))
+							  data.x.o = operands.z.o;
+							else
+							  data.x.o = operands.b.o;
+						end
+
 						
 					br, pbr: begin
 							if (register_truth(operands.b.o, data.op))
