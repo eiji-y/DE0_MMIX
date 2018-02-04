@@ -212,8 +212,10 @@ inout	[31:0]	GPIO1_D;				//	GPIO Connection 1 Data Bus
 
 
     MMIX_system u0 (
-		.dbg_led_led		({HEX3_DP, HEX3_D, HEX2_DP, HEX2_D, HEX1_DP, HEX1_D, HEX0_DP, HEX0_D}),
-		.dbg_led_btn		(BUTTON[2]),
+        .dbg_led_led		({HEX3_DP, HEX3_D, HEX2_DP, HEX2_D, HEX1_DP, HEX1_D, HEX0_DP, HEX0_D}),
+        .dbg_led_btn		(BUTTON),
+        .dbg_led_ledg		(LEDG),
+        .dbg_led_sw			(SW),
         .clk_clk       (CLOCK_50),       //   clk.clk
         .reset_reset_n (BUTTON[0]),  // reset.reset_n
         .sdram_wire_addr   (DRAM_ADDR),   // sdram_wire.addr

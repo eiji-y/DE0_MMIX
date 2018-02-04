@@ -205,23 +205,23 @@ module al_unit(
 
 					cmp: begin
 							if (operands.y.o[63] > operands.z.o[63])	// sign bit
-								data.x.o = -1;
+								data.x.o = 64'hffffffffffffffff;
 							else if (operands.y.o[63] < operands.z.o[63])
-								data.x.o = 1;
+								data.x.o = 64'h0000000000000001;
 							else if (operands.y.o < operands.z.o)
-								data.x.o = -1;
+								data.x.o = 64'hffffffffffffffff;
 							else if (operands.y.o > operands.z.o)
-								data.x.o = 1;
+								data.x.o = 64'h0000000000000001;
 							else
-								data.x.o = 0;
+								data.x.o = 64'h0000000000000000;
 						end
 					cmpu: begin
 							if (operands.y.o < operands.z.o)
-								data.x.o = -1;
+								data.x.o = 64'hffffffffffffffff;
 							else if (operands.y.o > operands.z.o)
-								data.x.o = 1;
+								data.x.o = 64'h0000000000000001;
 							else
-								data.x.o = 0;
+								data.x.o = 64'h0000000000000000;
 						end
 						
 					cset: begin
@@ -536,7 +536,7 @@ module ld_st_unit(
 								new_G = mem_readdata >> 56;
 								data.a.o = mem_readdata[17:0];
 								data.a.known = 1;
-								if (mem_readdata & 'h00fffffffffc0000)
+								if (mem_readdata & 64'h00fffffffffc0000)
 									data.interrupt[B_BIT] = 1;
 							end
 						end

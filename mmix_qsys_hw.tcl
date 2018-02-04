@@ -164,5 +164,7 @@ set_interface_property conduit CMSIS_SVD_VARIABLES ""
 set_interface_property conduit SVD_ADDRESS_GROUP ""
 
 add_interface_port conduit dbg_led export Output 32
-add_interface_port conduit dbg_btn export Input 1
+add_interface_port conduit dbg_btn export Input 3
+add_interface_port conduit dbg_ledg export Output 10
+add_interface_port conduit dbg_sw export Input 10
 

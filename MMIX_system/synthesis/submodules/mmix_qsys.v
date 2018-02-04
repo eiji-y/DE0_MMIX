@@ -32,7 +32,9 @@
 `timescale 1 ps / 1 ps
 module mmix_qsys (
 		output wire	[31:0] dbg_led,
-		input	 wire			 dbg_btn,
+		input	 wire	[2:0]	 dbg_btn,
+		output wire	[9:0]  dbg_ledg,
+		input	 wire	[9:0]	 dbg_sw,
 		input  wire        reset_n,         //         reset_sink.reset_n
 		input  wire        clk,             //         clock_sink.clk
 		input  wire [31:0] d_irq,           // interrupt_receiver.irq
@@ -59,6 +61,8 @@ module mmix_qsys (
 	cpu mmix_cpu(
 		.dbg_led				(dbg_led),
 		.dbg_btn				(dbg_btn),
+		.dbg_ledg			(dbg_ledg),
+		.dbg_sw				(dbg_sw),
 
 		.clk 					(clk),             //         clock_sink.clk
 		.reset_n				(reset_n),         //         reset_sink.reset_n

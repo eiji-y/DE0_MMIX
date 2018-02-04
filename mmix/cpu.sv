@@ -25,7 +25,9 @@
 
 module cpu(
 		output wire	[31:0] dbg_led,
-		input  wire			 dbg_btn,
+		input  wire [2:0]  dbg_btn,
+		output wire	[9:0]  dbg_ledg,
+		input	 wire	[9:0]	 dbg_sw,
 
 		input	wire			clk,
 		input	wire			reset_n,
@@ -45,7 +47,8 @@ module cpu(
 		S_DISPATCH,
 		S_EXEC,
 		S_TRAP,
-		S_HALT
+		S_HALT,
+		S_STOP
 	} stage;
 	
 	/////
@@ -174,7 +177,7 @@ module cpu(
 	led led0(
 		.data	(f_head.loc),
 //		.data	(operands.y.o),
-		.btn (dbg_btn),
+		.btn (dbg_btn[2]),
 		.dbg_led (dbg_led)
 		);
 	
@@ -190,6 +193,15 @@ module cpu(
 	function [31:0] pack_bytes (input [7:0] b1, b2, b3, b4);
 		pack_bytes = { b1, b2, b3, b4};
 	endfunction
+	
+	// for single step execution.
+	logic prev_btn1;
+	logic btn1;
+	
+	always_ff @(posedge clk) begin
+		prev_btn1 <= btn1;
+		btn1 <= dbg_btn[1];
+	end
 
 	always @(posedge clk, negedge reset_n)
 		if (reset_n == 0) begin
@@ -211,7 +223,10 @@ module cpu(
 			S_IFETCH:
 				begin
 					if (fetch_done) begin
-						stage <= S_DISPATCH;
+						if (dbg_sw[0])
+							stage <= S_STOP;
+						else
+							stage <= S_DISPATCH;
 						head <= f_head;
 					end
 				end
@@ -325,6 +340,14 @@ module cpu(
 			S_HALT:
 				begin
 					stage <= S_HALT;
+				end
+			S_STOP:
+				begin
+					if (prev_btn1 & ~btn1) begin
+						stage <= S_DISPATCH;
+					end else begin
+						stage <= S_STOP;
+					end
 				end
 
 			endcase

@@ -2,7 +2,7 @@ set_global_assignment -entity "MMIX_system" -library "MMIX_system" -name IP_TOOL
 set_global_assignment -entity "MMIX_system" -library "MMIX_system" -name IP_TOOL_VERSION "13.1"
 set_global_assignment -entity "MMIX_system" -library "MMIX_system" -name IP_TOOL_ENV "Qsys"
 set_global_assignment -library "MMIX_system" -name SOPCINFO_FILE [file join $::quartus(qip_path) "../../MMIX_system.sopcinfo"]
-set_global_assignment -entity "MMIX_system" -library "MMIX_system" -name SLD_INFO "QSYS_NAME MMIX_system HAS_SOPCINFO 1 GENERATION_ID 1516026210"
+set_global_assignment -entity "MMIX_system" -library "MMIX_system" -name SLD_INFO "QSYS_NAME MMIX_system HAS_SOPCINFO 1 GENERATION_ID 1517727249"
 set_global_assignment -library "MMIX_system" -name MISC_FILE [file join $::quartus(qip_path) "../../MMIX_system.cmp"]
 set_global_assignment -library "MMIX_system" -name SLD_FILE [file join $::quartus(qip_path) "MMIX_system.debuginfo"]
 set_global_assignment -name SYNTHESIS_ONLY_QIP ON
