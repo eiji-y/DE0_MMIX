@@ -193,14 +193,14 @@ module al_unit(
 						end
 					shl: begin
 							data.x.o = operands.y.o << shift_amt(operands.z.o);
-							if (data.x.o >>> shift_amt(operands.z.o) != operands.y.o)
+							if ($signed(data.x.o) >>> shift_amt(operands.z.o) != operands.y.o)
 								data.interrupt[V_BIT] = 1;
 						end
 					shru: begin
 							data.x.o = operands.y.o >> shift_amt(operands.z.o);
 						end
 					shr: begin
-							data.x.o = operands.y.o >>> shift_amt(operands.z.o);
+							data.x.o = $signed(operands.y.o) >>> shift_amt(operands.z.o);
 						end
 
 					cmp: begin
@@ -249,7 +249,7 @@ module al_unit(
 							end
 						end
 					incrl, unsave: begin
-							data.x.o = data.x.o;
+//							data.x.o = data.x.o;
 						end
 					jmp, pushj: begin
 							data.go.o = operands.z.o;

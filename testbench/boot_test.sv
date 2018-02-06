@@ -6,8 +6,9 @@ module boot_test(
 	import "DPI-C" function void mem_write(int, longint, longint);
 
 	logic	[31:0] dbg_led;
-	logic			 dbg_btn;
-	logic				dbg_halt;
+	logic	[2:0]	 dbg_btn;
+	logic [9:0]  dbg_ledg;
+	logic [9:0]  dbg_sw;
 
 	logic			clk;
 	logic			reset_n;
@@ -23,6 +24,8 @@ module boot_test(
 	cpu xxx(
 		dbg_led,
 		dbg_btn,
+		dbg_ledg,
+		dbg_sw,
 
 		clk,
 		reset_n,
@@ -49,6 +52,9 @@ module boot_test(
 				mem_write(mmix_datasize, mmix_address, mmix_writedata);
 				break;
 			end
+			
+//			if (mmix_address == 'h0013f5c4)
+//				$stop;
 			
 		end
 
