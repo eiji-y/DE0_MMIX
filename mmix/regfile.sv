@@ -131,6 +131,11 @@ module regfile(
 			y_val = '{ lrdy, ly_valid };
 		else
 			y_val = '{ y.o, 1 };
+//		case (y.src)
+//		2'b01: y_val = '{ grdy, gy_valid };
+//		2'b10: y_val = '{ lrdy, ly_valid };
+//		default: y_val = '{ y.o, 1 };
+//		endcase
 
 		if (z.src[0])
 			z_val = '{ grdz, gz_valid };
@@ -195,13 +200,13 @@ module regs(
 	);
 	
 	// latch
-	logic[63:0]	l_rd1, l_rd2, l_rd3, l_rd4;
 	reg[7:0]	prev_ra1, prev_ra2, prev_ra3, prev_ra4;
 	
 	logic	rd1_invalid, rd2_invalid, rd3_invalid, rd4_invalid;
 	reg[7:0]	ra;
 	wire[63:0] rd;
 	reg[2:0] state;
+	logic	rd1_dirty, rd2_dirty, rd3_dirty, rd4_dirty;
 	
 	sram rf(
 		.clk,
@@ -213,107 +218,105 @@ module regs(
 		.rd
 	);
 	
-	assign rd1 = (state == 1) ? rd : l_rd1;
-	assign rd2 = (state == 2) ? rd : l_rd2;
-	assign rd3 = (state == 3) ? rd : l_rd3;
-	assign rd4 = (state == 4) ? rd : l_rd4;
-	
 	assign rd1_valid = ~rd1_invalid;
 	assign rd2_valid = ~rd2_invalid;
 	assign rd3_valid = ~rd3_invalid;
 	assign rd4_valid = ~rd4_invalid;
 	
-	assign rd1_invalid = (prev_ra1 != ra1) & (state != 1) & ra1_req;
-	assign rd2_invalid = (prev_ra2 != ra2) & (state != 2) & ra2_req;
-	assign rd3_invalid = (prev_ra3 != ra3) & (state != 3) & ra3_req;
-	assign rd4_invalid = (prev_ra4 != ra4) & (state != 4) & ra4_req;
+	assign rd1_invalid = ((prev_ra1 != ra1) & ra1_req) | rd1_dirty;
+	assign rd2_invalid = ((prev_ra2 != ra2) & ra2_req) | rd2_dirty;
+	assign rd3_invalid = ((prev_ra3 != ra3) & ra3_req) | rd3_dirty;
+	assign rd4_invalid = ((prev_ra4 != ra4) & ra4_req) | rd4_dirty;
 	
-	always_ff @(posedge clk, negedge reset_n)
+	always_latch begin
 		if (reset_n == 0) begin
 			prev_ra1 <= 0;
 			prev_ra2 <= 0;
 			prev_ra3 <= 0;
 			prev_ra4 <= 0;
+//			rd1_dirty <= 0;
+//			rd2_dirty <= 0;
+//			rd3_dirty <= 0;
+//			rd4_dirty <= 0;
+		end else begin
+			if (state == 1) begin
+				prev_ra1 <= ra;
+				rd1 <= rd;
+//				rd1_dirty <= 0;
+			end
+			if (state == 2) begin
+				prev_ra2 <= ra;
+				rd2 <= rd;
+//				rd2_dirty <= 0;
+			end
+			if (state == 3) begin
+				prev_ra3 <= ra;
+				rd3 <= rd;
+//				rd3_dirty <= 0;
+			end
+			if (state == 4) begin
+				prev_ra4 <= ra;
+				rd4 <= rd;
+//				rd4_dirty <= 0;
+			end
+		
+//			if (we) begin
+//				if ((wa == prev_ra1) | (wa == ra1))
+//					rd1_dirty <= 1;
+//				if ((wa == prev_ra2) | (wa == ra2))
+//					rd2_dirty <= 1;
+//				if ((wa == prev_ra3) | (wa == ra3))
+//					rd3_dirty <= 1;
+//				if ((wa == prev_ra4) | (wa == ra4))
+//					rd4_dirty <= 1;
+//			end
+		end
+	end
+	
+	always_ff @(posedge clk, negedge reset_n)
+		if (reset_n == 0) begin
 			ra <= 0;
 			state <= 0;
+			rd1_dirty <= 0;
+			rd2_dirty <= 0;
+			rd3_dirty <= 0;
+			rd4_dirty <= 0;
 		end else begin
-			case (state)
-			0: begin
-					l_rd1 <= rd;
-					l_rd2 <= rd;
-					l_rd3 <= rd;
-					l_rd4 <= rd;
-				end
-			1: begin
-					prev_ra1 <= ra;
-					l_rd1 <= rd;
-				end
-			2: begin
-					prev_ra2 <= ra;
-					l_rd2 <= rd;
-				end
-			3: begin
-					prev_ra3 <= ra;
-					l_rd3 <= rd;
-				end
-			4: begin
-					prev_ra4 <= ra;
-					l_rd4 <= rd;
-				end
-			endcase
-			if (rd1_invalid | rd2_invalid) begin
-				if (rd1_invalid) begin
-					ra <= ra1;
-					state <= 1;
-				end else	begin
-					ra <= ra2;
-					state <= 2;
-				end
-			end else	begin
-				if (rd3_invalid) begin
-					ra <= ra3;
-					state <= 3;
-				end else if (rd4_invalid) begin
-					ra <= ra4;
-					state <= 4;
-				end else
-					state <= 5;
-			end
-			
 			if (we) begin
-				if (ra1_req) begin
-					if (wa == ra1)
-						l_rd1 <= wd;
-				end else begin
-					if (wa == prev_ra1)
-						l_rd1 <= wd;
-				end
-				
-				if (ra2_req) begin
-					if (wa == ra2)
-						l_rd2 <= wd;
-				end else begin
-					if (wa == prev_ra2)
-						l_rd2 <= wd;
-				end
-				
-				if (ra3_req) begin
-					if (wa == ra3)
-						l_rd3 <= wd;
-				end else begin
-					if (wa == prev_ra3)
-						l_rd3 <= wd;
-				end
-				
-				if (ra4_req) begin
-					if (wa == ra4)
-						l_rd4 <= wd;
-				end else begin
-					if (wa == prev_ra4)
-						l_rd4 <= wd;
-				end
-				
-			end
+				if ((wa == prev_ra1) | (wa == ra1))
+					rd1_dirty <= 1;
+				if ((wa == prev_ra2) | (wa == ra2))
+					rd2_dirty <= 1;
+				if ((wa == prev_ra3) | (wa == ra3))
+					rd3_dirty <= 1;
+				if ((wa == prev_ra4) | (wa == ra4))
+					rd4_dirty <= 1;
+			end else
+				casex ({ rd1_invalid, rd2_invalid, rd3_invalid, rd4_invalid })
+				4'b1xxx: begin
+						ra <= ra1;
+						state <= 1;
+						rd1_dirty <= 0;
+					end
+				4'b01xx: begin
+						ra <= ra2;
+						state <= 2;
+						rd2_dirty <= 0;
+					end
+				4'b001x: begin
+						ra <= ra3;
+						state <= 3;
+						rd3_dirty <= 0;
+					end
+				4'b0001: begin
+						ra <= ra4;
+						state <= 4;
+						rd4_dirty <= 0;
+					end
+				default: begin
+						state <= 0;
+					end
+				endcase
 		end
 	
 endmodule
