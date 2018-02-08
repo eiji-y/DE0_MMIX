@@ -125,7 +125,7 @@ module al_unit(
 	output logic			done
 	);
 
-	function int shift_amt(input[63:0] z);
+	function logic[6:0] shift_amt(input[63:0] z);
 		shift_amt = (z >= 64) ? 64 : z;
 	endfunction
 
@@ -265,9 +265,10 @@ module al_unit(
 							data.x.o = operands.z.o;
 						end
 					put: begin
-							if ((data.xx == 8) || (data.xx >= 15 && data.xx <= 20)) begin
-								// wait hot
-								case (data.xx)
+//							if ((data.xx == 8) || (data.xx >= 15 && data.xx <= 20)) begin
+//								// wait hot
+//							end
+							case (data.xx)
 //			      case rV:	/*239: */
 //				{
 //				  octa rv;
@@ -306,29 +307,30 @@ module al_unit(
 //				  data->z.o.l = g[rL].o.l;
 //			      default:
 //				break;
-								rG: begin
-										if ((data.z.o >= 256) || (data.z.o < L) || (data.z.o < 32)) begin
-											data.interrupt[B_BIT] = 1;
-											data.x.o = rG;
-										end else if (data.z.o < G) begin
-											new_G = G - 1;
-											data.x = '{ 0, 1, 2'b01, new_G };
-											if (data.z.o == new_G)
-												data.interim = 0;
-											else begin
-												data.interim = 1;
-												data.owner = 1;
-											end
+							rG: begin
+									if (|data.z.o[63:8] || (data.z.o[7:0] < L) || (data.z.o[7:0] < 32)) begin
+										data.interrupt[B_BIT] = 1;
+										data.x.o = rG;
+									end else if (data.z.o[7:0] < G) begin
+										new_G = G - 1'b1;
+										data.x = '{ 0, 1, 2'b01, new_G };
+										if (data.z.o[7:0] == new_G)
+											data.interim = 0;
+										else begin
+											data.interim = 1;
+											data.owner = 1;
 										end
 									end
-								endcase
-							end else begin
-								if ((data.xx == rA) && (operands.z.o >= 'h40000)) begin
-									data.interrupt[B_BIT] = 1;
+								end
+							rA: begin
+									if (|operands.z.o[63:18])
+										data.interrupt[B_BIT] = 1;
 									data.x.o = operands.z.o & 'h3ffff;
-								end else
+								end
+							default: begin
 									data.x.o = operands.z.o;
-							end
+								end
+							endcase
 						end
 					pop: begin
 							data.x.o = operands.y.o;
@@ -378,7 +380,7 @@ module al_unit(
 		endcase
 		
 		if (op[3])
-			register_truth = b ^ 1;
+			register_truth = b ^ 1'b1;
 		else
 			register_truth = b;
 	endfunction
