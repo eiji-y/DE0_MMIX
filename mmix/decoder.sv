@@ -202,6 +202,10 @@ module inst_decoder(
 	
 	assign {data.op, data.xx, data.yy, data.zz} = head.inst;
 	
+	// labels
+	logic pop_unsave;
+	logic decrease_gamma;
+	
 	spec	yy_y;
 	spec zz_z;
 	
@@ -220,6 +224,9 @@ module inst_decoder(
 	
 	always_comb begin
 	
+		pop_unsave = 0;
+		decrease_gamma = 0;
+		
 		stall = 0;
 		
 		new_L = L;
@@ -292,13 +299,13 @@ module inst_decoder(
 			
 			// @<Install register X as the destination, or insert
 			// an internal command and |goto dispatch_done| if X is marginal@>;
-			data.b = '{ 0, 2, S & lring_mask };
-			data.ra = '{0, 0, 0};
 			if (((S - O - L - 1) & lring_mask) == 0) begin
 				// @<Insert an instruction to advance gamma@>=
+				data.b = '{ 0, 2, S & lring_mask };
+				data.ra = '{0, 0, 0};
 				data.i = incgamma;
 				new_S = S + 1;
-				data.y = '{ S, 0, 0 };
+				data.y = '{ S << 3, 0, 0 };
 				data.z = '{ 0, 0, 0 };
 				data.mem_x = 1;
 				data.x = '{ 0, 0, 0, 0 };
@@ -307,6 +314,8 @@ module inst_decoder(
 				data.stack_alert = 1;
 			end else begin
 				// @<Insert an instruction to advance beta and L@>=
+				data.b = '{ 0, 2, S & lring_mask };
+				data.ra = '{0, 0, 0};
 				data.i = incrl;
 				data.x = '{0, 1, 2'b10, (O + L) & lring_mask};
 				new_L = L + 1;
@@ -425,6 +434,7 @@ module inst_decoder(
 				end
 			pushgo, pushj: begin
 				if ((data.xx >= G) && (((S - O - L - 1) & lring_mask) == 0)) begin
+					// @<Insert an instruction to advance gamma@>=
 			      data.need_b = 0;
 					data.need_ra = 0;
 			      data.i = incgamma;
@@ -463,55 +473,8 @@ module inst_decoder(
 			pop: begin
 				if (data.xx && L >= data.xx)
 					data.y = '{ 0, 2'b10, (O + data.xx - 1) & lring_mask};
-				if (S == O) begin
-					// assume lring_size is large enough.
-					data.i = decgamma;
-					new_S = S - 1;
-					data.y = '{ new_S << 3, 2'b00, 0 };
-					// spec_install (&l[new_S.l & lring_mask], &cool->x);
-					data.x = '{ 0, 0, 2'b10, new_S & lring_mask };
-					op = LDOU;
-					//cool->ptr_a = (void *) mem.up;
-					data.z = '{ 0, 0, 0 };
-					data.b = '{ 0, 0, 0 };
-					data.need_b = 0;
-					data.ren_x = 1;
-					data.interim = 1;
-				end else begin
-					// use ra to read l reg
-					data.ra = '{ 0, 2'b10, (O - 1) & lring_mask };
-					if (~operands.ra.valid)
-						stall = 1;
-					else begin
-						// now, operands.ra.o is new L
-						if ((O - S) <= operands.ra.o[7:0]) begin
-							// assume lring_size is large enough.
-							data.i = decgamma;
-							new_S = S - 1;
-							data.y = '{ new_S << 3, 2'b00, 0 };
-							// spec_install (&l[new_S.l & lring_mask], &cool->x);
-							data.x = '{ 0, 0, 2'b10, new_S & lring_mask };
-							op = LDOU;
-							//cool->ptr_a = (void *) mem.up;
-							data.z = '{ 0, 0, 0 };
-							data.b = '{ 0, 0, 0 };
-							data.need_b = 0;
-							data.ren_x = 1;
-							data.interim = 1;
-						end else begin
-							new_O = O - operands.ra.o[7:0] - 1;
-							new_L = operands.ra.o[7:0] + (data.xx <= L ? data.xx : L + 1);
-							if (new_L > G)
-								new_L = G;
-							if (operands.ra.o[7:0] < new_L) begin
-								data.ren_x = 1;
-								//spec_install (&l[(cool_O.l - 1) & lring_mask], &cool->x);
-								data.x = '{0, 0, 2'b10, (O - 1) & lring_mask };
-							end
-							data.z.o = head.inst[15:0] << 2;
-						end
-					end
-				end
+				// pop_unsave:
+				pop_unsave = 1;
 			end
 			unsave: begin
 					if (data.interrupt[B_BIT]) begin
@@ -544,58 +507,9 @@ module inst_decoder(
 								data.i = unsave;
 								data.interim = 0;
 								op = UNSAVE;
+								
 								//goto pop_unsave;
-								if (S == O) begin
-									data.i = decgamma;
-									new_S = S - 1;
-									data.y = '{ new_S << 3, 0, 0};
-									data.x = '{ 0, 0, 2'b10, new_S & lring_mask };
-									op = LDOU;
-	//								 cool->ptr_a = (void *) mem.up;
-									data.z = '{ 0, 0, 0 };
-									data.b = '{ 0, 0, 0 };
-	//								 cool->need_b = false;
-									data.ren_x = 1;
-									data.interim = 1;
-								end else begin
-									// use ra to read l reg
-									data.ra = '{ 0, 2'b10, (O - 1) & lring_mask };
-									if (~operands.ra.valid)
-										stall = 1;
-									else begin
-										if ((O - S) <= operands.ra.o[7:0]) begin
-											if ((O + L) == (S + lring_size)) begin
-//													  spec_install (&g[rL], &cool->rl);
-//													  cool->rl.o.l = cool_L - 1;
-//													  cool->set_l = true;
-												new_L = L - 1;
-											end
-											
-											data.i = decgamma;
-											new_S = S - 1;
-											data.y = '{ new_S << 3, 0, 0 };
-											data.x = '{ 0, 0, 2'b01, new_S & lring_mask };
-											op = LDOU;
-											//			cool->ptr_a = (void *) mem.up;
-											data.z = '{ 0, 0, 0 };
-											data.b = '{ 0, 0, 0 };
-											data.need_b = 0;
-											data.ren_x = 1;
-											data.interim = 1;
-										end else begin
-											new_O = O - operands.ra.o[7:0] - 1;
-											new_L = operands.ra.o[7:0];
-											if (new_L > G)
-												new_L = G;
-											if (operands.ra.o[7:0] < new_L) begin
-												data.ren_x = 1;
-												data.x = '{ 0, 0, 2'b10, (O - 1) & lring_mask };
-											end
-//													cool->set_l = true, spec_install (&g[rL], &cool->rl);
-//													cool->rl.o.l = new_L;
-										end
-									end
-								end
+								pop_unsave = 1;
 							end
 						default: begin
 								data.interim = 0;
@@ -608,6 +522,52 @@ module inst_decoder(
 			endcase
 		
 		end
+		
+		if (pop_unsave) begin
+			if (S == O) begin
+				// assume lring_size is large enough.
+				decrease_gamma = 1;
+			end else begin
+				// use ra to read l reg
+				data.ra = '{ 0, 2'b10, (O - 1) & lring_mask };
+				if (~operands.ra.valid)
+					stall = 1;
+				else begin
+					// now, operands.ra.o is new L
+					if ((O - S) <= operands.ra.o[7:0]) begin
+						// assume lring_size is large enough.
+						decrease_gamma = 1;
+					end else begin
+						new_O = O - operands.ra.o[7:0] - 1;
+						new_L = operands.ra.o[7:0] + (data.xx <= L ? data.xx : L + 1);
+						if (new_L > G)
+							new_L = G;
+						if (operands.ra.o[7:0] < new_L) begin
+							data.ren_x = 1;
+							//spec_install (&l[(cool_O.l - 1) & lring_mask], &cool->x);
+							data.x = '{0, 0, 2'b10, (O - 1) & lring_mask };
+						end
+						data.z.o = head.inst[15:0] << 2;
+					end
+				end
+			end
+		end	// pop_unsave
+
+		if (decrease_gamma) begin
+			data.i = decgamma;
+			new_S = S - 1;
+			data.y = '{ new_S << 3, 2'b00, 0 };
+			// spec_install (&l[new_S.l & lring_mask], &cool->x);
+			data.x = '{ 0, 0, 2'b10, new_S & lring_mask };
+			op = LDOU;
+			//cool->ptr_a = (void *) mem.up;
+			data.z = '{ 0, 0, 0 };
+			data.b = '{ 0, 0, 0 };
+			data.need_b = 0;
+			data.ren_x = 1;
+			data.interim = 1;
+		end
+		
 	end
 	
 endmodule

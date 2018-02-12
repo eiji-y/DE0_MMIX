@@ -218,7 +218,7 @@ module cpu(
 					O <= 0;
 					S <= 0;
 					stage <= S_IFETCH;
-					next_addr = 64'h8000fffffffffffc;
+					next_addr <= 64'h8000fffffffffffc;
 				end
 			S_IFETCH:
 				begin
@@ -265,7 +265,7 @@ module cpu(
 							end
 						end
 						
-						data.owner = 1;
+						data.owner <= 1;
 						
 						O <= new_O;
 						S <= new_S;
