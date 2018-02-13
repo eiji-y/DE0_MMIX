@@ -26,13 +26,13 @@
 module inst_decoder(
 	input	fetch			head,
 	input wire [7:0]	G, L,
-	input wire [61:0]	S, O,
+	input wire [60:0]	S, O,
 	input logic[63:0]	J,
 	
 	output logic		stall,
 //	
 	output logic[7:0]		new_L,
-	output logic[61:0]	new_O, new_S,
+	output logic[60:0]	new_O, new_S,
 
 	output control			data,
 	input  values			operands
@@ -578,7 +578,7 @@ module yy_zz_decoder(
 	input logic [31:0]	inst,
 	input logic [7:0]		G,
 	input logic [7:0]		L,
-	input logic [61:0]		O,
+	input logic [60:0]		O,
 	input internal_opcode	i,
 	output spec			y,
 	output spec			z

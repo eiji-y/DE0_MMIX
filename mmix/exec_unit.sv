@@ -32,7 +32,7 @@ module exec_unit (
 	input  values			operands,
 	
 	input  logic[7:0]		G, L,
-	input  logic[61:0]	O, S,
+	input  logic[60:0]	O, S,
 	input  logic[63:0]	P,
 	
 	output logic			done,

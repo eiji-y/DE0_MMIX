@@ -52,8 +52,8 @@ module cpu(
 	} stage;
 	
 	/////
-	reg [61:0]  O;
-	reg [61:0]  S;
+	reg [60:0]  O;
+	reg [60:0]  S;
 	reg [7:0]  G;
 	reg [7:0]  L;
 	
@@ -93,7 +93,7 @@ module cpu(
 	logic stall;
 	
 	wire[7:0]	new_G, new_L;
-	wire[61:0]	new_O, new_S;
+	wire[60:0]	new_O, new_S;
 	
 	fetch		head;
 	control dec_data;
@@ -206,6 +206,11 @@ module cpu(
 	always @(posedge clk, negedge reset_n)
 		if (reset_n == 0) begin
 			stage <= S_RESET;
+			G <= 8'd32;
+			L <= 8'd0;
+			O <= 0;
+			S <= 0;
+			next_addr <= 64'h8000fffffffffffc;
 		end else begin
 			gregw = '{0, 0, 0};
 			lregw = '{0, 0, 0};
@@ -213,12 +218,7 @@ module cpu(
 			case (stage)
 			S_RESET:
 				begin
-					G <= 8'd32;
-					L <= 8'd0;
-					O <= 0;
-					S <= 0;
 					stage <= S_IFETCH;
-					next_addr <= 64'h8000fffffffffffc;
 				end
 			S_IFETCH:
 				begin
