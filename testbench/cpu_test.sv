@@ -2,7 +2,9 @@ module cpu_test(
 	);
 
 	logic	[31:0] dbg_led;
-	logic			 dbg_btn;
+	logic [2:0]	 dbg_btn;
+	logic	[9:0]  dbg_ledg;
+	logic	[9:0]	 dbg_sw;
 
 	logic			clk;
 	logic			reset_n;
@@ -18,6 +20,8 @@ module cpu_test(
 	cpu xxx(
 		dbg_led,
 		dbg_btn,
+		dbg_ledg,
+		dbg_sw,
 
 		clk,
 		reset_n,

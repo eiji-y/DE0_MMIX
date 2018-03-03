@@ -30,8 +30,7 @@ module regfile(
 	input  spec			y,     z,     b,     ra,
 	output spec_val	y_val, z_val, b_val, ra_val,
 	
-	input regwrite		gregw,
-	input regwrite		lregw,
+	input regwrite		regw,
 	
 	output[63:0]		J,
 	output[63:0]		P
@@ -114,12 +113,12 @@ module regfile(
 	assign gadra = ra.addr;
 	assign ladra = ra.addr;
 	
-	assign gregwe = gregw.enable;
-	assign lregwe = lregw.enable;
-	assign gregwa = gregw.addr;
-	assign lregwa = lregw.addr;
-	assign gregwd = gregw.data;
-	assign lregwd = lregw.data;
+	assign gregwe = regw.enable[0];
+	assign lregwe = regw.enable[1];
+	assign gregwa = regw.addr;
+	assign lregwa = regw.addr;
+	assign gregwd = regw.data;
+	assign lregwd = regw.data;
 	
 	assign J = gJ;
 	assign P = gP;

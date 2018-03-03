@@ -235,15 +235,25 @@ module inst_decoder(
 		
 		op = data.op;
 
-		if (~support[op]) begin
-			f = flags[TRAP];
-			i = trap;
-		end else if ((op == TRIP) && head.loc[63]) begin
+//		if (~support[op]) begin
+//			f = flags[TRAP];
+//			i = trap;
+//		end else if ((op == TRIP) && head.loc[63]) begin
+//			f = 0;
+//			i = noop;
+//		end else begin
+//			f = flags[op];
+//			i = internal_op[op];
+//		end
+		if ((op == TRIP) && head.loc[63]) begin
 			f = 0;
 			i = noop;
 		end else begin
 			f = flags[op];
-			i = internal_op[op];
+			if (~support[op])
+				i = trap;
+			else
+				i = internal_op[op];
 		end
 		
 		data.i = i;
@@ -476,6 +486,18 @@ module inst_decoder(
 				// pop_unsave:
 				pop_unsave = 1;
 			end
+			trap: begin
+					data.ra = '{ 0, 2'b01, rT};
+					data.b = '{ 0, 2'b01, 255};
+					data.ren_x = 1;
+					data.x = '{ J, 1, 2'b01, 255};
+					data.ren_a = 1;
+					data.a = '{ 0, 0, 2'b01, rBB};
+					if (f & X_is_dest_bit)
+						data.interrupt[26:19] = RESUME_SET;
+					else
+						data.interrupt[26:19] = 'h80;
+				end
 			unsave: begin
 					if (data.interrupt[B_BIT]) begin
 						data.i = noop;

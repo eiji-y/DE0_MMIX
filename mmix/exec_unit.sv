@@ -347,6 +347,10 @@ module al_unit(
 							if (data.go.o[63] && !data.loc[63])
 								data.interrupt[P_BIT] = 1;
 						end
+					trap: begin
+							data.interrupt[F_BIT] = 1;
+							data.a.o = operands.b.o;
+						end
 					default: begin
 							done = 0;
 						end

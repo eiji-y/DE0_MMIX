@@ -44,6 +44,11 @@ parameter H_BIT = 16; /* trip handler bit */
 parameter F_BIT = 17; /* forced trap bit */
 parameter E_BIT = 18; /* external (dynamic) trap bit */
 
+parameter RESUME_AGAIN = 0;	/* repeat the command in rX as if in location rW − 4 */
+parameter RESUME_CONT = 1;		/* same, but substitute rY and rZ for operands */
+parameter RESUME_SET = 2;		/* set r[X] to rZ */
+parameter RESUME_TRANS = 3;	/* install (rY, rZ) into IT-cache or DT-cache, then RESUME_AGAIN */
+
 // Special Register Numbers
 parameter rA = 21; /* arithmetic status register */
 parameter rB = 0;  /* bootstrap register (trip) */
@@ -245,7 +250,7 @@ typedef struct packed {
 	logic				ren_a;
 	
 	logic				mem_x, interim, stack_alert;
-	logic	[18:0]	interrupt;
+	logic	[26:0]	interrupt;
 } control;
 
 typedef struct packed {
@@ -253,7 +258,7 @@ typedef struct packed {
 } values;
 
 typedef struct packed {
-	logic			enable;
+	logic[1:0]	enable;
 	logic[7:0]	addr;
 	logic[63:0]	data;
 } regwrite;

@@ -46,6 +46,7 @@ module cpu(
 		S_IFETCH,
 		S_DISPATCH,
 		S_EXEC,
+		S_COMMIT,
 		S_TRAP,
 		S_HALT,
 		S_STOP
@@ -59,6 +60,8 @@ module cpu(
 	
 	logic[63:0]	J;
 	logic[63:0] P;
+	
+	int doing_interrupt;
 	
 	///////
 	
@@ -153,7 +156,7 @@ module cpu(
 		.mem_done
 	);
 
-	regwrite		gregw, lregw;
+	regwrite		regw;
 	spec			y,     z,     b,     ra;
 
 	regfile	registers(
@@ -169,7 +172,7 @@ module cpu(
 		.b_val	(operands.b),
 		.ra_val	(operands.ra),
 
-		.gregw, .lregw,
+		.regw,
 		.J,
 		.P
 	);
@@ -212,8 +215,7 @@ module cpu(
 			S <= 0;
 			next_addr <= 64'h8000fffffffffffc;
 		end else begin
-			gregw = '{0, 0, 0};
-			lregw = '{0, 0, 0};
+			regw = '{0, 0, 0};
 			
 			case (stage)
 			S_RESET:
@@ -236,10 +238,6 @@ module cpu(
 						stage <= S_EXEC;
 						data <= dec_data;
 						no_fetch <= dec_data.interim;
-						
-						if (dec_data.i == trap) begin
-							stage <= S_TRAP;
-						end
 						
 						if (dec_data.interim) begin
 							if (dec_data.op == UNSAVE) begin
@@ -281,24 +279,41 @@ module cpu(
 						G <= new_G;
 						data <= ex1_data;
 
-						if (ex1_data.ren_x & ex1_data.x.src[0])
-							gregw = '{ 1, ex1_data.x.addr, ex1_data.x.o };
-						else if (ex1_data.ren_a & ex1_data.a.src[0])
-							gregw = '{ 1, ex1_data.a.addr, ex1_data.a.o };
+						if (ex1_data.ren_x) begin
+							regw = '{ ex1_data.x.src, ex1_data.x.addr, ex1_data.x.o };
+						end else if (ex1_data.ren_a) begin
+							regw = '{ ex1_data.a.src, ex1_data.a.addr, ex1_data.a.o };
+						end
 						
-						if (ex1_data.ren_x & ex1_data.x.src[1])
-							lregw = '{ 1, ex1_data.x.addr, ex1_data.x.o };
-						else if (ex1_data.ren_a & ex1_data.a.src[1])
-							lregw = '{ 1, ex1_data.a.addr, ex1_data.a.o };
-						
-						if (ex1_data.owner)
+						if (ex1_data.ren_x & ex1_data.ren_a)
+							stage <= S_COMMIT;
+						else if (ex1_data.owner)
 							stage <= S_EXEC;
-						else begin
+						else if (ex1_data.interrupt[F_BIT]) begin
+							stage <= S_TRAP;
+							doing_interrupt <= 0;
+						end else begin
 							if (no_fetch)	//(no_fetch)
 								stage <= S_DISPATCH;
 							else
 								stage <= S_IFETCH;
 						end
+					end
+				end
+			S_COMMIT:
+				begin
+					regw = '{ data.a.src, data.a.addr, data.a.o };
+					
+					if (data.owner)
+						stage <= S_EXEC;
+					else if (data.interrupt[F_BIT]) begin
+						stage <= S_TRAP;
+						doing_interrupt <= 0;
+					end else begin
+						if (no_fetch)	//(no_fetch)
+							stage <= S_DISPATCH;
+						else
+							stage <= S_IFETCH;
 					end
 				end
 		//						8'hf7:	// PUTI
@@ -336,7 +351,26 @@ module cpu(
 		//
 		//								x = z;
 		//							end
-			S_TRAP,
+			S_TRAP:
+				begin
+					case (doing_interrupt)
+					0: begin
+							next_addr <= operands.ra.o;
+							regw = '{ 2'b01, rK, 0 };
+						end
+					1:	
+						regw = '{ 2'b01, rWW, data.go.o };
+					2:
+						regw = '{ 2'b01, rXX, { data.interrupt[26:19], 24'b0, data.op, data.xx, data.yy, data.zz} };
+					3:
+						regw = '{ 2'b01, rYY, data.y.o };
+					4:
+						regw = '{ 2'b01, rZZ, data.z.o };
+					5:
+						stage <= S_IFETCH;
+					endcase
+					doing_interrupt <= doing_interrupt + 1;
+				end
 			S_HALT:
 				begin
 					stage <= S_HALT;
