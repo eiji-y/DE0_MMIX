@@ -61,10 +61,11 @@ module cpu(
 	logic[63:0]	J;
 	logic[63:0] P;
 	
-	int doing_interrupt;
+	logic[3:0] doing_interrupt;
 	
 	///////
 	
+	logic fu_enable;
 	logic [63:0]	next_addr;
 	logic fetch_done;
 	logic	no_fetch;
@@ -183,6 +184,43 @@ module cpu(
 		.btn (dbg_btn[2]),
 		.dbg_led (dbg_led)
 		);
+		
+	always_comb begin
+		case (dbg_sw[3:1])
+		default: begin
+				dbg_ledg[0] = (stage == S_IFETCH);
+				dbg_ledg[1] = (stage == S_DISPATCH);
+				dbg_ledg[2] = (stage == S_EXEC);
+				dbg_ledg[3] = (stage == S_COMMIT);
+				dbg_ledg[4] = (stage == S_TRAP);
+				dbg_ledg[5] = operands.y.valid;
+				dbg_ledg[6] = operands.z.valid;
+				dbg_ledg[7] = operands.b.valid;
+				dbg_ledg[8] = operands.ra.valid;
+				dbg_ledg[9] = no_fetch;
+			end
+		3'b010: begin
+				dbg_ledg[7:0] = regw.addr;
+				dbg_ledg[9:8] = regw.enable;
+			end
+		3'b001: begin
+				dbg_ledg[7:0] = data.y.addr;
+				dbg_ledg[9:8] = data.y.src;
+			end
+		3'b011: begin
+				dbg_ledg[7:0] = data.z.addr;
+				dbg_ledg[9:8] = data.z.src;
+			end
+		3'b101: begin
+				dbg_ledg[7:0] = data.b.addr;
+				dbg_ledg[9:8] = data.b.src;
+			end
+		3'b111: begin
+				dbg_ledg[7:0] = data.ra.addr;
+				dbg_ledg[9:8] = data.ra.src;
+			end
+		endcase
+	end
 	
 	assign y = (stage == S_DISPATCH) ? dec_data.y : data.y;
 	assign z = (stage == S_DISPATCH) ? dec_data.z : data.z;
@@ -237,7 +275,8 @@ module cpu(
 					if (~stall) begin
 						stage <= S_EXEC;
 						data <= dec_data;
-						no_fetch <= dec_data.interim;
+						//no_fetch <= dec_data.interim;
+						no_fetch <= (dec_data.i > trip);
 						
 						if (dec_data.interim) begin
 							if (dec_data.op == UNSAVE) begin
@@ -261,6 +300,21 @@ module cpu(
 									end
 								endcase
 							end
+						end
+						
+						if (dec_data.i == resum) begin
+							// data.y = '{ 0, 2'b01, rWW};
+							// data.z = '{ 0, 2'b01, rXX};
+							head.loc <= operands.y.o - 4;
+							case (operands.z.o[63:56])
+							RESUME_SET: begin
+									head.resuming <= 4;
+									head.inst <= { SETH, operands.z.o[23:16], 16'b0 };
+								end
+							//RESUME_CONT:
+							//RESUME_AGAIN:
+							//RESUME_TRANS:
+							endcase
 						end
 						
 						data.owner <= 1;
@@ -369,7 +423,7 @@ module cpu(
 					5:
 						stage <= S_IFETCH;
 					endcase
-					doing_interrupt <= doing_interrupt + 1;
+					doing_interrupt <= doing_interrupt + 1'b1;
 				end
 			S_HALT:
 				begin

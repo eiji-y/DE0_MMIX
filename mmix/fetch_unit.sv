@@ -45,6 +45,7 @@ module fetch_unit(
 	assign head.loc = loc;
 	assign head.inst = inst;
 	assign head.interrupt = interrupt;
+	assign head.resuming = 0;
 	
 	logic [3:0]		state;
 	

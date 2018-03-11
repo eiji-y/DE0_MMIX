@@ -126,7 +126,7 @@ module al_unit(
 	);
 
 	function logic[6:0] shift_amt(input[63:0] z);
-		shift_amt = (z >= 64) ? 64 : z;
+		shift_amt = (z >= 64) ? 7'd64 : z;
 	endfunction
 
 	always_comb begin
@@ -139,7 +139,7 @@ module al_unit(
 		end else begin
 			done = 0;
 			if (enable) begin
-				if (operands.y.valid && operands.z.valid && operands.b.valid) begin
+				if (operands.y.valid && operands.z.valid && operands.b.valid && operands.ra.valid) begin
 					done = 1;
 					case (data.i)
 					set: begin
@@ -351,6 +351,20 @@ module al_unit(
 							data.interrupt[F_BIT] = 1;
 							data.a.o = operands.b.o;
 						end
+					resum: begin
+//							data.go = '{ WW, 1, 0, 0};
+//							data.a = '{ g255, 1, 2'b01, rK };
+//							data.x = '{ rBB, 1, 2'b01, 255 };
+//							data.y = '{ 0, 2'b01, rWW};
+//							data.z = '{ 0, 2'b01, rXX};
+//							data.b = '{ 0, 2'b01, rBB};
+//							data.ra = '{ 0, 2'b01, 255};
+							data.go.o = operands.y.o;
+							data.a.o = operands.ra.o;
+							data.a.known = 1;
+							data.x.o = operands.b.o;
+							data.x.known = 1;
+						end
 					default: begin
 							done = 0;
 						end
@@ -539,7 +553,7 @@ module ld_st_unit(
 							end
 						(UNSAVE >> 1): begin
 							if (data.xx == 0) begin
-								new_G = mem_readdata >> 56;
+								new_G = mem_readdata[63:56];
 								data.a.o = mem_readdata[17:0];
 								data.a.known = 1;
 								if (mem_readdata & 64'h00fffffffffc0000)

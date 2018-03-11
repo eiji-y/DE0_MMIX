@@ -22,18 +22,18 @@
 module led(
 	input wire	[63:0] data,
 	input wire			 btn,
-	output wire	[32:0] dbg_led
+	output wire	[31:0] dbg_led
 	);
 
 	reg [1:0] state;
 
-	assign dbg_led[31] = (state == 0)?0:1;
+	assign dbg_led[31] = (state == 0)?1'b0:1'b1;
 	assign dbg_led[30:24] = LED(sel2(0, sel1(state, data)));
-	assign dbg_led[23] = (state == 1)?0:1;
+	assign dbg_led[23] = (state == 1)?1'b0:1'b1;
 	assign dbg_led[22:16] = LED(sel2(1, sel1(state, data)));
-	assign dbg_led[15] = (state == 2)?0:1;
+	assign dbg_led[15] = (state == 2)?1'b0:1'b1;
 	assign dbg_led[14:8] = LED(sel2(2, sel1(state, data)));
-	assign dbg_led[7] = (state == 3)?0:1;
+	assign dbg_led[7] = (state == 3)?1'b0:1'b1;
 	assign dbg_led[6:0] = LED(sel2(3, sel1(state, data)));
 	
 	function [6:0] LED(input [3:0] in);
@@ -80,6 +80,6 @@ module led(
 	endfunction
 	
 	always @(posedge btn)
-		state <= state + 1;
+		state <= state + 1'b1;
 		
 endmodule

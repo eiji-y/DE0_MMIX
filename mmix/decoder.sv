@@ -105,7 +105,7 @@ module inst_decoder(
 		1, 1, 1, 1, 1, 1, 1, 1, // SETH, SETMH, SETML, SETL, INCH, INCMH, INCML, INCL,
 		1, 1, 1, 1, 1, 1, 1, 1, // ORH, ORMH, ORML, ORL, ANDNH, ANDNMH, ANDNML, ANDNL,
 		1, 1, 1, 1, 1, 1, 1, 1, // JMP, JMPB, PUSHJ, PUSHJB, GETA, GETAB, PUT, PUTI,
-		1, 0, 0, 1, 0, 0, 1, 1  // POP, RESUME, SAVE, UNSAVE, SYNC, SWYM, GET, TRIP
+		1, 1, 0, 1, 0, 0, 1, 1  // POP, RESUME, SAVE, UNSAVE, SYNC, SWYM, GET, TRIP
 	};
 	
 	// 'h01 means Z is an immediate value
@@ -198,7 +198,7 @@ module inst_decoder(
 //	assign data.no_fetch = no_fetch;
 	assign data.loc = head.loc;
 
-	reg			dispatch_done;
+//	reg			dispatch_done;
 	
 	assign {data.op, data.xx, data.yy, data.zz} = head.inst;
 	
@@ -257,10 +257,11 @@ module inst_decoder(
 		end
 		
 		data.i = i;
+		data.ra = '{ 0, 0, 0 };
 		data.x = '{ 0, 0, 0, 0};
 		data.a = '{ 0, 0, 0, 0};
-		data.need_b = 0;
-		data.need_ra = 0;
+//		data.need_b = 0;
+//		data.need_ra = 0;
 		data.ren_x = 0;
 		data.mem_x = 0;
 		data.ren_a = 0;
@@ -328,7 +329,7 @@ module inst_decoder(
 				data.ra = '{0, 0, 0};
 				data.i = incrl;
 				data.x = '{0, 1, 2'b10, (O + L) & lring_mask};
-				new_L = L + 1;
+				new_L = L + 1'b1;
 				data.y = '{ 0, 0, 0 };
 				data.z = '{ 0, 0, 0 };
 				data.mem_x = 0;
@@ -343,47 +344,63 @@ module inst_decoder(
 			data.interim = 0;
 			data.stack_alert = 0;
 			
-			dispatch_done = 0;
+//			dispatch_done = 0;
 			
-			// assign y & z
-			data.z = zz_z;
-			
-			if ((op[7:4] == 4'he) && (i != set)) begin
-				if (data.xx >= G) begin
-					data.y = '{ 0, 1, data.xx};
+			if (head.resuming != 0) begin
+				if (head.resuming[0]) begin
+					data.y = '{ 0, 2'b01, rY };
+					data.z = '{ 0, 2'b01, rZ };
 				end else begin
-					data.y = '{ 0, 2, (O + data.xx) & lring_mask };
+					data.y = '{ 0, 2'b01, rYY };
+					data.z = '{ 0, 2'b01, rZZ };
 				end
+				if (head.resuming >= 3) begin
+					data.ra = '{ 0, 2'b01, rA };
+				end
+				data.b = '{ 0, 0, 0 };
+//				 cool->usage = false;
 			end else begin
-				data.y = yy_y;
-			end
-			
-			// @ @<Install the operand fields of the |cool| block@>=
-			if (f & 8'h10) begin
-				if (data.xx >= G) begin
-					data.b = '{ 0, 1, data.xx};
-				end else if (data.xx < L) begin
-					data.b = '{ 0, 2, (O + data.xx) & lring_mask };
+				// assign y & z
+				data.z = zz_z;
+				
+				if ((op[7:4] == 4'he) && (i != set)) begin
+					if (data.xx >= G) begin
+						data.y = '{ 0, 1, data.xx};
+					end else begin
+						data.y = '{ 0, 2, (O + data.xx) & lring_mask };
+					end
+				end else begin
+					data.y = yy_y;
+				end
+				
+				// @ @<Install the operand fields of the |cool| block@>=
+				if (f & 8'h10) begin
+					if (data.xx >= G) begin
+						data.b = '{ 0, 1, data.xx};
+					end else if (data.xx < L) begin
+						data.b = '{ 0, 2, (O + data.xx) & lring_mask };
+					end else begin
+						data.b = '{ 0, 0, 0 };
+					end
+				end else if ((op & 'hfe) == STCO) begin
+					data.b = '{ data.xx, 0, 0 };
 				end else begin
 					data.b = '{ 0, 0, 0 };
 				end
-			end else if ((op & 'hfe) == STCO) begin
-				data.b = '{ data.xx, 0, 0 };
-			end else begin
-				data.b = '{ 0, 0, 0 };
-			end
 
-			if (third_operand[op] && (i != trap)) begin
-				if (third_operand[op] == rA || third_operand[op] == rE) begin
-					data.ra = '{ 0, 1, rA };
+				if (third_operand[op] && (i != trap)) begin
+					if (third_operand[op] == rA || third_operand[op] == rE) begin
+						data.ra = '{ 0, 1, rA };
+					end else begin
+						data.ra = '{ 0, 0, 0 };
+					end
+					if (third_operand[op] != rA) begin
+						data.b = '{ 0, 1, third_operand[op] };
+					end
 				end else begin
 					data.ra = '{ 0, 0, 0 };
 				end
-				if (third_operand[op] != rA) begin
-					data.b = '{ 0, 1, third_operand[op] };
-				end
-			end else begin
-				data.ra = '{ 0, 0, 0 };
+			
 			end
 
 			case (i)
@@ -445,8 +462,8 @@ module inst_decoder(
 			pushgo, pushj: begin
 				if ((data.xx >= G) && (((S - O - L - 1) & lring_mask) == 0)) begin
 					// @<Insert an instruction to advance gamma@>=
-			      data.need_b = 0;
-					data.need_ra = 0;
+//			      data.need_b = 0;
+//					data.need_ra = 0;
 			      data.i = incgamma;
 			      new_S = S + 1;
 			      data.b = '{ 0, 2'b10, S & lring_mask};
@@ -475,8 +492,8 @@ module inst_decoder(
 						data.a = '{ data.loc + 4, 1, 2'b01, rJ };
 						//cool.set_l = true, spec_install (&g[rL], &cool.rl);
 						//cool.rl.o.l = cool_L - x - 1;
-						new_L = L - data.xx - 1;
-						new_O = O + data.xx + 1;
+						new_L = L - data.xx - 1'b1;
+						new_O = O + data.xx + 1'b1;
 					end
 				end
 			end
@@ -498,6 +515,54 @@ module inst_decoder(
 					else
 						data.interrupt[26:19] = 'h80;
 				end
+			resume: begin
+					if (data.zz) begin
+						if (~data.loc[63]) begin
+							data.interrupt[K_BIT] = 1;
+							data.i = noop;
+						end else begin
+//							data.go = '{ WW, 1, 0, 0};
+//							data.a = '{ g255, 1, 2'b01, rK };
+//							data.x = '{ rBB, 1, 2'b01, 255 };
+							data.y = '{ 0, 2'b01, rWW};
+							data.z = '{ 0, 2'b01, rXX};
+							data.b = '{ 0, 2'b01, rBB};
+							data.ra = '{ 0, 2'b01, 255};
+							
+							data.go = '{ 0, 0, 0, 0};
+							data.a = '{ 0, 0, 2'b01, rK };
+							data.ren_a = 1;
+							data.x = '{ 0, 0, 2'b01, 255 };
+							data.ren_x = 1;
+							
+							if (~operands.y.valid || ~operands.z.valid)
+								stall = 1;
+							else begin
+								if (~operands.z.o[63]) begin
+									data.i = resum;
+									// head.loc = operands.y.o - 4;
+									case (operands.z.o[63:56])
+									RESUME_SET: begin
+										data.interrupt[15:8] = operands.z.o[55:48];
+										//head.resuming = 4;
+										//head.inst = { SETH, operands.z.o[23:16], 16'b0 };
+										end
+									//RESUME_CONT:
+									//RESUME_AGAIN:
+									//RESUME_TRANS:
+									default: begin
+									// bad_resume
+											data.interrupt[B_BIT] = 1;
+											data.i = noop;
+										end
+									endcase
+								end
+							end
+						end
+					end else begin
+						// not yet.
+					end
+				end
 			unsave: begin
 					if (data.interrupt[B_BIT]) begin
 						data.i = noop;
@@ -513,8 +578,8 @@ module inst_decoder(
 									//cool->ren_x = true, spec_install (&g[rG], &cool->x);
 									data.ren_a = 1;
 									data.a = '{ 0, 0, 2'b01, rA };
-									new_O = operands.z.o >> 3;
-									new_S = operands.z.o >> 3;
+									new_O = operands.z.o[63:3];
+									new_S = operands.z.o[63:3];
 									new_L = 0;
 								end
 							end
@@ -560,8 +625,8 @@ module inst_decoder(
 						// assume lring_size is large enough.
 						decrease_gamma = 1;
 					end else begin
-						new_O = O - operands.ra.o[7:0] - 1;
-						new_L = operands.ra.o[7:0] + (data.xx <= L ? data.xx : L + 1);
+						new_O = O - operands.ra.o[7:0] - 1'b1;
+						new_L = operands.ra.o[7:0] + (data.xx <= L ? data.xx : L + 1'b1);
 						if (new_L > G)
 							new_L = G;
 						if (operands.ra.o[7:0] < new_L) begin
@@ -585,7 +650,7 @@ module inst_decoder(
 			//cool->ptr_a = (void *) mem.up;
 			data.z = '{ 0, 0, 0 };
 			data.b = '{ 0, 0, 0 };
-			data.need_b = 0;
+//			data.need_b = 0;
 			data.ren_x = 1;
 			data.interim = 1;
 		end

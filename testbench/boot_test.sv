@@ -53,7 +53,8 @@ module boot_test(
 				break;
 			end
 			
-			if (mmix_address == 'h0013f68c)
+			//if (mmix_address == 'h0013f68c)
+			if (mmix_address == 'h00af70)
 				$stop;
 			
 		end

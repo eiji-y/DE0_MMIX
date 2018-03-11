@@ -118,7 +118,7 @@ typedef enum bit[7:0] {
 	POP, RESUME, SAVE, UNSAVE, SYNC, SWYM, GET, TRIP								// ALU
 } mmix_opcode;
 
-typedef enum {
+typedef enum bit[6:0] {
 	mul0,
 	mul1,
 	mul2,
@@ -215,6 +215,7 @@ typedef struct packed {
 	logic[63:0]		loc;
 	logic[31:0]		inst;
 	logic[18:0]		interrupt;
+	logic[2:0]		resuming;
 } fetch;
 
 typedef struct packed {
@@ -244,8 +245,8 @@ typedef struct packed {
 	logic				owner;
 	internal_opcode	i;
 	
-	logic				need_b;
-	logic				need_ra;
+//	logic				need_b;
+//	logic				need_ra;
 	logic				ren_x;
 	logic				ren_a;
 	
