@@ -63,7 +63,8 @@ module bus_adapter(
 	assign d_read = mem_read & i_request;
 	assign d_write = mem_write & i_request;
 	assign d_byteenable = i_byteenable;
-	assign mem_done =  mem_write ? write_done : d_readdatavalid;
+//	assign mem_done =  mem_write ? write_done : d_readdatavalid;
+	assign mem_done = (i_state == 2) ? d_readdatavalid : write_done;
 	
 	always_comb begin
 		case (mem_datasize)
@@ -90,7 +91,7 @@ module bus_adapter(
 		endcase
 	end
 	
-	always @(posedge clk or negedge reset_n)
+	always_ff @(posedge clk or negedge reset_n)
 	begin
 		if (reset_n == 0)
 			begin
@@ -103,7 +104,7 @@ module bus_adapter(
 				if (mem_read | mem_write)
 					begin
 						i_state <= 1;
-						write_done <= 0;
+//						write_done <= 0;
 					end
 			1:		// read
 				if (d_waitrequest == 0)
@@ -120,8 +121,10 @@ module bus_adapter(
 					begin
 						i_state <= 0;
 					end
-			3:
-				i_state <= 0;
+			3: begin
+					i_state <= 0;
+					write_done <= 0;
+				end
 			endcase
 	end
 	
