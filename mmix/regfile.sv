@@ -239,22 +239,22 @@ module regs(
 //			rd4_dirty <= 0;
 		end else begin
 			if (state == 1) begin
-				prev_ra1 <= ra;
+				prev_ra1 <= ra1;
 				rd1 <= rd;
 //				rd1_dirty <= 0;
 			end
 			if (state == 2) begin
-				prev_ra2 <= ra;
+				prev_ra2 <= ra2;
 				rd2 <= rd;
 //				rd2_dirty <= 0;
 			end
 			if (state == 3) begin
-				prev_ra3 <= ra;
+				prev_ra3 <= ra3;
 				rd3 <= rd;
 //				rd3_dirty <= 0;
 			end
 			if (state == 4) begin
-				prev_ra4 <= ra;
+				prev_ra4 <= ra4;
 				rd4 <= rd;
 //				rd4_dirty <= 0;
 			end
