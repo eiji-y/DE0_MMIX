@@ -23,7 +23,7 @@ static unsigned long long swap8(unsigned long long data)
 
 void mem_init(char *fn)
 {
-	fd = open(fn, O_RDONLY);
+	fd = open(fn, O_RDONLY|O_BINARY);
 	if (fd < 0)
 		return;
 	if (fstat(fd, &sb) < 0) {

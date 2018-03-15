@@ -26,7 +26,7 @@
 module cpu(
 		output wire	[31:0] dbg_led,
 		input  wire [2:0]  dbg_btn,
-		output wire	[9:0]  dbg_ledg,
+		output logic[9:0]  dbg_ledg,
 		input	 wire	[9:0]	 dbg_sw,
 
 		input	wire			clk,
@@ -417,11 +417,14 @@ module cpu(
 					2:
 						regw = '{ 2'b01, rXX, { data.interrupt[26:19], 24'b0, data.op, data.xx, data.yy, data.zz} };
 					3:
-						regw = '{ 2'b01, rYY, data.y.o };
+						regw = '{ 2'b01, rYY, operands.y.o };
 					4:
-						regw = '{ 2'b01, rZZ, data.z.o };
+						regw = '{ 2'b01, rZZ, operands.z.o };
 					5:
-						stage <= S_IFETCH;
+						if (dbg_sw[9])
+							stage <= S_STOP;
+						else
+							stage <= S_IFETCH;
 					endcase
 					doing_interrupt <= doing_interrupt + 1'b1;
 				end
