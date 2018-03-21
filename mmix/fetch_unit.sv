@@ -38,24 +38,39 @@ module fetch_unit(
 	input  logic			mem_done
 );
 
-	logic[63:0]	loc;
 	logic[31:0]	inst;
-	logic[18:0]	interrupt;
+	logic px_bit, f_bit;
 	
-	assign head.loc = loc;
-	assign head.inst = inst;
-	assign head.interrupt = interrupt;
+	assign head.loc = inst_ptr;
+	assign head.inst = head.interrupt[F_BIT] ? {SWYM, 24'b0} : inst;
 	assign head.resuming = 0;
+	
+	always_comb begin
+		head.interrupt = 0;
+		head.interrupt[PX_BIT] = px_bit;
+		head.interrupt[F_BIT] = f_bit;
+	end
 	
 	logic [3:0]		state;
 	
 	assign mem_datasize = 2'b10;
+	assign mem_address = { 1'b0, inst_ptr[62:0] };
 	
+	always_ff @(posedge clk, negedge reset_n) begin
+		if (reset_n == 0) begin
+			inst <= 0;
+		end else begin
+			if ((state == 1) && mem_done)
+				inst <= mem_readdata[31:0];
+		end
+	end
+
 	always_ff @(posedge clk, negedge reset_n) begin
 		if (reset_n == 0) begin
 			mem_read <= 0;
 			fetch_done <= 0;
-			interrupt <= 0;
+			px_bit <= 0;
+			f_bit <= 0;
 			state <= 0;
 		end else begin
 			case (state)
@@ -63,19 +78,16 @@ module fetch_unit(
 					if (enable) begin
 						if (inst_ptr[63]) begin
 							if (inst_ptr[62:48]) begin
-								inst <= {SWYM, 24'b0};
-								interrupt[PX_BIT] <= 1;
+								px_bit <= 1;
 								fetch_done <= 1;
 								state <= 15;
 							end else begin
-								mem_address <= {16'b0, inst_ptr[47:0]};
 								mem_read <= 1;
 								state <= 1;
 							end
 						end else begin
 							// request virtual address translation
-							mem_address <= inst_ptr;
-							interrupt[F_BIT] <= 1;
+							f_bit <= 1;
 							fetch_done <= 1;
 							state <= 15;
 						end
@@ -84,15 +96,14 @@ module fetch_unit(
 			1: begin
 					if (mem_done) begin
 						mem_read <= 0;
-						loc <= inst_ptr;
-						inst <= mem_readdata[31:0];
 						fetch_done <= 1;
 						state <= 15;
 					end
 				end
 			15: begin
 					fetch_done <= 0;
-					interrupt <= 0;
+					px_bit <= 0;
+					f_bit <= 0;
 					state <= 0;
 				end
 			endcase
