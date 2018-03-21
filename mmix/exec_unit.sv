@@ -49,9 +49,9 @@ module exec_unit (
 	input  logic			mem_done
 	);
 	
-	parameter lring_size	= 256;
-	parameter lring_mask	= (lring_size - 1);
+	logic exec_enable;
 	
+	assign exec_enable = enable && operands.y.valid && operands.z.valid && operands.b.valid && operands.ra.valid;
 
 	logic[7:0]	alu_new_G;
 	control		alu_data;
@@ -64,7 +64,7 @@ module exec_unit (
 	al_unit		alu1(
 		.clk,
 		.reset_n,
-		.enable,
+		.enable	(exec_enable),
 		
 		.G, .L,
 		.data_in		(data),
@@ -79,7 +79,7 @@ module exec_unit (
 	ld_st_unit	lsu1(
 		.clk,
 		.reset_n,
-		.enable,
+		.enable	(exec_enable),
 		
 		.G,
 		.P,
@@ -128,147 +128,152 @@ module al_unit(
 	function logic[6:0] shift_amt(input[63:0] z);
 		shift_amt = (z >= 64) ? 7'd64 : z;
 	endfunction
+	
+	function logic[64:0] shift_left(input [63:0] x, input [6:0] amt);
+		logic[127:0] tmp;
+		
+		tmp = { 64'b0, x } << amt;
+		shift_left[64] = |tmp[127:64];
+		shift_left[63:0] = tmp[63:0];
+	endfunction
 
 	always_comb begin
-		new_G = G;
+//		new_G = G;
 		data = data_in;
 		data.owner = 0;
 		
-		if (~reset_n) begin
-			done = 0;
-		end else begin
-			done = 0;
-			if (enable) begin
-				if (operands.y.valid && operands.z.valid && operands.b.valid && operands.ra.valid) begin
-					done = 1;
-					case (data.i)
-					set: begin
-							data.x.o = operands.z.o;
-						end
-					or_: begin
-							data.x.o = operands.y.o | operands.z.o;
-						end
-					orn: begin
-							data.x.o = operands.y.o | ~operands.z.o;
-						end
-					nor_: begin
-							data.x.o = ~(operands.y.o | operands.z.o);
-						end
-					and_: begin
-							data.x.o = operands.y.o & operands.z.o;
-						end
-					andn: begin
-							data.x.o = operands.y.o & ~operands.z.o;
-						end
-					nand_: begin
-							data.x.o = ~(operands.y.o & operands.z.o);
-						end
-					xor_: begin
-							data.x.o = operands.y.o ^ operands.z.o;
-						end
-					nxor: begin
-							data.x.o = operands.y.o ^ ~operands.z.o;
-						end
-					///
-					addu: begin
-							case (data.op[7:1])
-								(IIADDU>>1): data.x.o = (operands.y.o << 1) + operands.z.o;
-								(IVADDU>>1): data.x.o = (operands.y.o << 2) + operands.z.o;
-								(VIIIADDU>>1): data.x.o = (operands.y.o << 3) + operands.z.o;
-								(XVIADDU>>1): data.x.o = (operands.y.o << 4) + operands.z.o;
-								default: data.x.o = operands.y.o + operands.z.o; 
-							endcase
-						end
-					subu: begin
-							data.x.o = operands.y.o - operands.z.o;
-						end
-					add: begin
-							{data.interrupt[V_BIT], data.x.o } = operands.y.o + operands.z.o;
-						end
-					sub: begin
-							{data.interrupt[V_BIT], data.x.o } = operands.y.o - operands.z.o;
-						end
-					shlu: begin
-							data.x.o = operands.y.o << shift_amt(operands.z.o);
-						end
-					shl: begin
-							data.x.o = operands.y.o << shift_amt(operands.z.o);
-							if ($signed(data.x.o) >>> shift_amt(operands.z.o) != operands.y.o)
-								data.interrupt[V_BIT] = 1;
-						end
-					shru: begin
-							data.x.o = operands.y.o >> shift_amt(operands.z.o);
-						end
-					shr: begin
-							data.x.o = $signed(operands.y.o) >>> shift_amt(operands.z.o);
-						end
+		done = 1;
+		case (data.i)
+		set: begin
+				data.x.o = operands.z.o;
+			end
+		or_: begin
+				data.x.o = operands.y.o | operands.z.o;
+			end
+		orn: begin
+				data.x.o = operands.y.o | ~operands.z.o;
+			end
+		nor_: begin
+				data.x.o = ~(operands.y.o | operands.z.o);
+			end
+		and_: begin
+				data.x.o = operands.y.o & operands.z.o;
+			end
+		andn: begin
+				data.x.o = operands.y.o & ~operands.z.o;
+			end
+		nand_: begin
+				data.x.o = ~(operands.y.o & operands.z.o);
+			end
+		xor_: begin
+				data.x.o = operands.y.o ^ operands.z.o;
+			end
+		nxor: begin
+				data.x.o = operands.y.o ^ ~operands.z.o;
+			end
+		///
+		addu: begin
+				case (data.op[7:1])
+					(IIADDU>>1): data.x.o = (operands.y.o << 1) + operands.z.o;
+					(IVADDU>>1): data.x.o = (operands.y.o << 2) + operands.z.o;
+					(VIIIADDU>>1): data.x.o = (operands.y.o << 3) + operands.z.o;
+					(XVIADDU>>1): data.x.o = (operands.y.o << 4) + operands.z.o;
+					default: data.x.o = operands.y.o + operands.z.o; 
+				endcase
+			end
+		subu: begin
+				data.x.o = operands.y.o - operands.z.o;
+			end
+		add: begin
+				data.x.o = operands.y.o + operands.z.o;
+				if ((operands.y.o[63] ^ operands.z.o[63]) == 0 &&
+					 (operands.y.o[63] ^ data.x.o[63]) != 0)
+					data.interrupt[V_BIT] = 1;
+			end
+		sub: begin
+				data.x.o = operands.y.o - operands.z.o;
+				if ((data.x.o[63] ^ operands.z.o[63]) == 0 &&
+					 (operands.y.o[63] ^ data.x.o[63]) != 0)
+					data.interrupt[V_BIT] = 1;
+			end
+		shlu: begin
+				data.x.o = operands.y.o << shift_amt(operands.z.o);
+			end
+		shl: begin
+//						data.x.o = operands.y.o << shift_amt(operands.z.o);
+//						if ($signed(data.x.o) >>> shift_amt(operands.z.o) != operands.y.o)
+//							data.interrupt[V_BIT] = 1;
+				{ data.interrupt[V_BIT], data.x.o } = shift_left(operands.y.o, shift_amt(operands.z.o));
+			end
+		shru: begin
+				data.x.o = operands.y.o >> shift_amt(operands.z.o);
+			end
+		shr: begin
+				data.x.o = $signed(operands.y.o) >>> shift_amt(operands.z.o);
+			end
 
-					cmp: begin
-							if (operands.y.o[63] > operands.z.o[63])	// sign bit
-								data.x.o = 64'hffffffffffffffff;
-							else if (operands.y.o[63] < operands.z.o[63])
-								data.x.o = 64'h0000000000000001;
-							else if (operands.y.o < operands.z.o)
-								data.x.o = 64'hffffffffffffffff;
-							else if (operands.y.o > operands.z.o)
-								data.x.o = 64'h0000000000000001;
-							else
-								data.x.o = 64'h0000000000000000;
-						end
-					cmpu: begin
-							if (operands.y.o < operands.z.o)
-								data.x.o = 64'hffffffffffffffff;
-							else if (operands.y.o > operands.z.o)
-								data.x.o = 64'h0000000000000001;
-							else
-								data.x.o = 64'h0000000000000000;
-						end
-						
-					cset: begin
-							if (register_truth(operands.y.o, data.op))
-							  data.x.o = operands.z.o;
-							else
-							  data.x.o = operands.b.o;
-						end
+		cmp: begin
+				if (operands.y.o[63] > operands.z.o[63])	// sign bit
+					data.x.o = 64'hffffffffffffffff;
+				else if (operands.y.o[63] < operands.z.o[63])
+					data.x.o = 64'h0000000000000001;
+				else if (operands.y.o < operands.z.o)
+					data.x.o = 64'hffffffffffffffff;
+				else if (operands.y.o > operands.z.o)
+					data.x.o = 64'h0000000000000001;
+				else
+					data.x.o = 64'h0000000000000000;
+			end
+		cmpu: begin
+				if (operands.y.o < operands.z.o)
+					data.x.o = 64'hffffffffffffffff;
+				else if (operands.y.o > operands.z.o)
+					data.x.o = 64'h0000000000000001;
+				else
+					data.x.o = 64'h0000000000000000;
+			end
+			
+		cset: begin
+				if (register_truth(operands.y.o, data.op))
+				  data.x.o = operands.z.o;
+				else
+				  data.x.o = operands.b.o;
+			end
 
-						
-					br, pbr: begin
-							if (register_truth(operands.b.o, data.op))
-								data.go.o = operands.z.o;
-							else
-								data.go.o = operands.y.o;
-								
-							//inst_ptr.o = data.go.o;
-							//inst_ptr.p = 0;
-							
-							if (!data.loc[63]) begin
-								if (data.go.o[63])
-									data.interrupt[P_BIT] = 1;
-								else
-									data.interrupt[P_BIT] = 0;
-							end
-						end
-					incrl, unsave: begin
+			
+		br, pbr: begin
+				if (register_truth(operands.b.o, data.op))
+					data.go.o = operands.z.o;
+				else
+					data.go.o = operands.y.o;
+					
+				//inst_ptr.o = data.go.o;
+				//inst_ptr.p = 0;
+				
+				if (data.go.o[63] && !data.loc[63])
+					data.interrupt[P_BIT] = 1;
+			end
+		incrl, unsave: begin
 //							data.x.o = data.x.o;
-						end
-					jmp, pushj: begin
-							data.go.o = operands.z.o;
-						end
-					get: begin
-							//if (data->zz >= 21 || data->zz == rK
-							// || data->zz == rQ)
-							//  {
-							// if (data != old_hot)
-							//wait (1);
-							// data->z.o = g[data->zz].o;
-							//  }
-							data.x.o = operands.z.o;
-						end
-					put: begin
+			end
+		jmp, pushj: begin
+				data.go.o = operands.z.o;
+			end
+		get: begin
+				//if (data->zz >= 21 || data->zz == rK
+				// || data->zz == rQ)
+				//  {
+				// if (data != old_hot)
+				//wait (1);
+				// data->z.o = g[data->zz].o;
+				//  }
+				data.x.o = operands.z.o;
+			end
+		put: begin
 //							if ((data.xx == 8) || (data.xx >= 15 && data.xx <= 20)) begin
 //								// wait hot
 //							end
-							case (data.xx)
+				case (data.xx)
 //			      case rV:	/*239: */
 //				{
 //				  octa rv;
@@ -307,51 +312,51 @@ module al_unit(
 //				  data->z.o.l = g[rL].o.l;
 //			      default:
 //				break;
-							rG: begin
-									if (|data.z.o[63:8] || (data.z.o[7:0] < L) || (data.z.o[7:0] < 32)) begin
-										data.interrupt[B_BIT] = 1;
-										data.x.o = rG;
-									end else if (data.z.o[7:0] < G) begin
-										new_G = G - 1'b1;
-										data.x = '{ 0, 1, 2'b01, new_G };
-										if (data.z.o[7:0] == new_G)
-											data.interim = 0;
-										else begin
-											data.interim = 1;
-											data.owner = 1;
-										end
-									end
-								end
-							rA: begin
-									if (|operands.z.o[63:18])
-										data.interrupt[B_BIT] = 1;
-									data.x.o = operands.z.o & 'h3ffff;
-								end
-							default: begin
-									data.x.o = operands.z.o;
-								end
-							endcase
-						end
-					pop: begin
-							data.x.o = operands.y.o;
-							//data.y.o = data.b.o;
-							data.go.o = operands.b.o + operands.z.o;
-							if (data.go.o[63] && !data.loc[63])
-								data.interrupt[P_BIT] = 1;
-						end
-					go, pushgo: begin
-							if (data.i == go) begin
-								data.x.o = data.go.o;
+				rG: begin
+						if (|data.z.o[63:8] || (data.z.o[7:0] < L) || (data.z.o[7:0] < 32)) begin
+							data.interrupt[B_BIT] = 1;
+							data.x.o = rG;
+						end else if (data.z.o[7:0] < G) begin
+//									new_G = G - 1'b1;
+//									data.x = '{ 0, 1, 2'b01, G - 1'b1 };
+							if (data.z.o[7:0] == (G - 1'b1))
+								data.interim = 0;
+							else begin
+								data.interim = 1;
+								data.owner = 1;
 							end
-							data.go.o = operands.y.o + operands.z.o;
-							if (data.go.o[63] && !data.loc[63])
-								data.interrupt[P_BIT] = 1;
 						end
-					trap: begin
-							data.interrupt[F_BIT] = 1;
-							data.a.o = operands.b.o;
-						end
-					resum: begin
+					end
+				rA: begin
+						if (|operands.z.o[63:18])
+							data.interrupt[B_BIT] = 1;
+						data.x.o = operands.z.o & 'h3ffff;
+					end
+				default: begin
+						data.x.o = operands.z.o;
+					end
+				endcase
+			end
+		pop: begin
+				data.x.o = operands.y.o;
+				//data.y.o = data.b.o;
+				data.go.o = operands.b.o + operands.z.o;
+				if (data.go.o[63] && !data.loc[63])
+					data.interrupt[P_BIT] = 1;
+			end
+		go, pushgo: begin
+				if (data.i == go) begin
+					data.x.o = data.go.o;
+				end
+				data.go.o = operands.y.o + operands.z.o;
+				if (data.go.o[63] && !data.loc[63])
+					data.interrupt[P_BIT] = 1;
+			end
+		trap: begin
+				data.interrupt[F_BIT] = 1;
+				data.a.o = operands.b.o;
+			end
+		resum: begin
 //							data.go = '{ WW, 1, 0, 0};
 //							data.a = '{ g255, 1, 2'b01, rK };
 //							data.x = '{ rBB, 1, 2'b01, 255 };
@@ -359,23 +364,31 @@ module al_unit(
 //							data.z = '{ 0, 2'b01, rXX};
 //							data.b = '{ 0, 2'b01, rBB};
 //							data.ra = '{ 0, 2'b01, 255};
-							data.go.o = operands.y.o;
-							data.a.o = operands.ra.o;
-							data.a.known = 1;
-							data.x.o = operands.b.o;
-							data.x.known = 1;
-						end
-					default: begin
-							done = 0;
-						end
-					endcase
-				end
-			end
-			
-			if (data.ren_x) begin
+				data.go.o = operands.y.o;
+				data.a.o = operands.ra.o;
+				data.a.known = 1;
+				data.x.o = operands.b.o;
 				data.x.known = 1;
 			end
+		default: begin
+				done = 0;
+			end
+		endcase
+
+		
+		if (data.ren_x) begin
+			data.x.known = 1;
 		end
+		
+		if ((data.i == put) && (data.xx == rG) && (data.z.o[7:0] < G)) begin
+			new_G = G - 1'b1;
+			data.x = '{ 0, 1, 2'b01, G - 1'b1 };
+		end else begin
+			new_G = G;
+		end
+		
+		if (!enable)
+			done = 0;
 	end
 	
 
@@ -444,10 +457,8 @@ module ld_st_unit(
 	
 	assign data_out = data;
 	
-	assign mem_read = ((state == S_MEMREAD) || (next_state == S_MEMREAD))
-								&& operands.y.valid && operands.z.valid;
-	assign mem_write = ((state == S_MEMWRITE) || (next_state == S_MEMWRITE)) && (state != S_MEMREAD)
-								&& operands.y.valid && operands.z.valid && operands.b.valid;
+	assign mem_read = ((state == S_MEMREAD) || (next_state == S_MEMREAD));
+	assign mem_write = ((state == S_MEMWRITE) || (next_state == S_MEMWRITE)) && (state != S_MEMREAD);
 	
 	assign mem_address = operands.y.o + operands.z.o;
 	assign mem_writedata = operands.b.o;
