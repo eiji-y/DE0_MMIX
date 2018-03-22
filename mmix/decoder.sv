@@ -404,14 +404,6 @@ module inst_decoder(
 			end
 
 			case (i)
-			cswap: begin
-					data.ren_a = 1;
-					if (data.xx >= G)
-						data.a = '{ 0, 0, 1, data.xx };
-					else
-						data.a = '{ 0, 0, 2, (O + data.xx) & lring_mask };
-					//data.i = pst;
-				end
 			st:
 				begin
 					

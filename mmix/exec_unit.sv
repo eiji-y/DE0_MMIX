@@ -126,7 +126,8 @@ module al_unit(
 	);
 
 	function logic[6:0] shift_amt(input[63:0] z);
-		shift_amt = (z >= 64) ? 7'd64 : z;
+		//shift_amt = (z >= 64) ? 7'd64 : z;
+		shift_amt = (|z[63:6]) ? 7'd64 : z[5:0];
 	endfunction
 	
 	function logic[64:0] shift_left(input [63:0] x, input [6:0] amt);
@@ -319,6 +320,7 @@ module al_unit(
 						end else if (data.z.o[7:0] < G) begin
 //									new_G = G - 1'b1;
 //									data.x = '{ 0, 1, 2'b01, G - 1'b1 };
+							data.x.o = 0;
 							if (data.z.o[7:0] == (G - 1'b1))
 								data.interim = 0;
 							else begin
@@ -382,7 +384,10 @@ module al_unit(
 		
 		if ((data.i == put) && (data.xx == rG) && (data.z.o[7:0] < G)) begin
 			new_G = G - 1'b1;
-			data.x = '{ 0, 1, 2'b01, G - 1'b1 };
+			//data.x = '{ 0, 1, 2'b01, G - 1'b1 };
+			//{ data.x.src, data.x.addr } = '{ 2'b01, G - 1'b1 };
+			data.x.src = 2'b01;
+			data.x.addr = G - 1'b1;
 		end else begin
 			new_G = G;
 		end
@@ -524,7 +529,7 @@ module ld_st_unit(
 								data.interrupt[V_BIT] = 1;
 						(CSWAP>>1):
 							//if (mem_readdata == P)
-								data.a.o = 1;
+							data.x.o = 1;
 					endcase
 					
 					done = 1;
@@ -576,11 +581,11 @@ module ld_st_unit(
 					
 					if (data.i == cswap) begin
 						if (mem_readdata == P) begin
-//							data.a.o = 1;
+//							data.x.o = 1;
 							next_state = S_MEMWRITE;
 						end else begin
-							data.ren_x = 1;
-							data.x = '{mem_readdata, 1, 2'b01, rP };
+							data.ren_a = 1;
+							data.a = '{mem_readdata, 1, 2'b01, rP };
 
 							done = 1;
 							next_state = S_IDLE;
