@@ -243,6 +243,35 @@ module cpu(
 		prev_btn1 <= btn1;
 		btn1 <= dbg_btn[1];
 	end
+	
+	//////////////////////
+	control next_data;
+	
+	always_comb begin
+		next_data = data;
+		
+		case (stage)
+		S_DISPATCH: begin
+				if (~stall) begin
+					next_data = dec_data;
+					next_data.owner = 1;
+				end
+			end
+		S_EXEC: begin
+				if (ex1_done) begin
+					next_data = ex1_data;
+				end
+			end
+		endcase
+	end
+	
+	always_ff @(posedge clk, negedge reset_n) begin
+		if (reset_n == 0) begin
+			data <= 0;
+		end else begin
+			data <= next_data;
+		end
+	end
 
 	always @(posedge clk, negedge reset_n)
 		if (reset_n == 0) begin
@@ -253,6 +282,7 @@ module cpu(
 			S <= 0;
 			next_addr <= 64'h8000fffffffffffc;
 		end else begin
+			
 			regw = '{0, 0, 0};
 			
 			case (stage)
@@ -268,13 +298,14 @@ module cpu(
 						else
 							stage <= S_DISPATCH;
 						head <= f_head;
+						
 					end
 				end
 			S_DISPATCH:
 				begin
 					if (~stall) begin
 						stage <= S_EXEC;
-						data <= dec_data;
+//						data <= dec_data;
 						//no_fetch <= dec_data.interim;
 						no_fetch <= (dec_data.i > trip);
 						
@@ -317,7 +348,7 @@ module cpu(
 							endcase
 						end
 						
-						data.owner <= 1;
+//						data.owner <= 1;
 						
 						O <= new_O;
 						S <= new_S;
@@ -331,41 +362,29 @@ module cpu(
 						next_addr <= ex1_data.go.o;
 						
 						G <= new_G;
-						data <= ex1_data;
+//						data <= ex1_data;
 
-						if (ex1_data.ren_x) begin
+						if (ex1_data.ren_x)
 							regw = '{ ex1_data.x.src, ex1_data.x.addr, ex1_data.x.o };
-						end else if (ex1_data.ren_a) begin
-							regw = '{ ex1_data.a.src, ex1_data.a.addr, ex1_data.a.o };
-						end
 						
-						if (ex1_data.ren_x & ex1_data.ren_a)
-							stage <= S_COMMIT;
-						else if (ex1_data.owner)
-							stage <= S_EXEC;
-						else if (ex1_data.interrupt[F_BIT]) begin
-							stage <= S_TRAP;
-							doing_interrupt <= 0;
-						end else begin
-							if (no_fetch)	//(no_fetch)
-								stage <= S_DISPATCH;
-							else
-								stage <= S_IFETCH;
-						end
+						stage <= S_COMMIT;
 					end
 				end
 			S_COMMIT:
 				begin
-					regw = '{ data.a.src, data.a.addr, data.a.o };
+					if (data.ren_a)
+						regw = '{ data.a.src, data.a.addr, data.a.o };
 					
-					if (data.owner)
-						stage <= S_EXEC;
-					else if (data.interrupt[F_BIT]) begin
+					if (data.interrupt[F_BIT]) begin
 						stage <= S_TRAP;
 						doing_interrupt <= 0;
+					end else if (data.owner) begin
+						stage <= S_EXEC;
+					end else if (no_fetch) begin	//(no_fetch)
+						stage <= S_DISPATCH;
 					end else begin
-						if (no_fetch)	//(no_fetch)
-							stage <= S_DISPATCH;
+						if (dbg_sw[0])
+							stage <= S_STOP;
 						else
 							stage <= S_IFETCH;
 					end
