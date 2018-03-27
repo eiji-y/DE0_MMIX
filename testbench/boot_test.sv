@@ -46,7 +46,9 @@ module boot_test(
 		while (1) begin
 			@(posedge clk);
 			if (mmix_read == 1) begin
-				if (mmix_address == 'h2dd80c)
+				if (mmix_address == 'h58)
+					$stop;
+				if (mmix_address == 'h94)
 					$stop;
 				mmix_readdata = mem_read(mmix_datasize, mmix_address);
 				break;

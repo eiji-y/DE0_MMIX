@@ -33,7 +33,8 @@ module regfile(
 	input regwrite		regw,
 	
 	output[63:0]		J,
-	output[63:0]		P
+	output[63:0]		P,
+	output[63:0]		K
 	);
 	
 	logic			gy_valid, gz_valid, gb_valid, gra_valid;
@@ -52,6 +53,7 @@ module regfile(
 	
 	logic[63:0]	gJ;
 	logic[63:0] gP;
+	logic[63:0] gK;
 	
 	regs greg(
 		.clk (clk),
@@ -122,6 +124,7 @@ module regfile(
 	
 	assign J = gJ;
 	assign P = gP;
+	assign K = gK;
 
 	always_comb begin
 		if (y.src[0])
@@ -162,11 +165,13 @@ module regfile(
 		if (reset_n == 0) begin
 			gJ <= 0;
 			gP <= 0;
+			gK <= 0;
 		end else begin
 			if (gregwe) begin
 				case (gregwa)
 				rJ: gJ <= gregwd;
 				rP: gP <= gregwd;
+				rK: gK <= gregwd;
 				endcase
 			end
 		end

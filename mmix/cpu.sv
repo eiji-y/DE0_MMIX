@@ -61,6 +61,11 @@ module cpu(
 	logic[63:0]	J;
 	logic[63:0] P;
 	
+	logic[63:0]	I;
+	logic[63:0]	Q;
+	logic[63:0] new_Q;
+	logic[63:0]	K;
+
 	logic[3:0] doing_interrupt;
 	
 	///////
@@ -110,7 +115,7 @@ module cpu(
 		.L		(L),
 		.S		(S),
 		.O		(O),
-		.J,
+		.J, .I, .Q,
 		.stall,
 
 		.new_L,
@@ -142,6 +147,7 @@ module cpu(
 		.G, .L,
 		.O, .S,
 		.P,
+		.new_Q,
 		
 		.done			(ex1_done),
 		
@@ -175,12 +181,13 @@ module cpu(
 
 		.regw,
 		.J,
-		.P
+		.P,
+		.K
 	);
 	
 	led led0(
-		.data	(f_head.loc),
-//		.data	(operands.y.o),
+//		.data	(f_head.loc),
+		.data	(data.loc),
 		.btn (dbg_btn[2]),
 		.dbg_led (dbg_led)
 		);
@@ -262,26 +269,71 @@ module cpu(
 					next_data = ex1_data;
 				end
 			end
+		S_TRAP: begin
+				if (doing_interrupt == 7) begin
+					next_data.ra = '{ 0, 2'b01, rTT};
+					next_data.b = '{ 0, 2'b01, 255};
+					next_data.interrupt[26:19] <= 8'h80;
+				end
+			end
 		endcase
 	end
 	
-	always_ff @(posedge clk, negedge reset_n) begin
-		if (reset_n == 0) begin
-			data <= 0;
-		end else begin
-			data <= next_data;
+	// I
+	logic[63:0] next_I;
+	logic interval_timeout;
+	
+	always_comb begin
+		interval_timeout = 0;
+		
+		if (regw.enable[0] && regw.addr == rI) begin
+			next_I = regw.data;
+  		end else begin
+			next_I = I - 1;
+			if (next_I == 0)
+				interval_timeout = 1;
 		end
 	end
+	
+	// Q
+	logic[63:0] next_Q;
+	logic[63:0] next_new_Q;
+	
+	always_comb begin
+		next_Q = Q;
+		next_new_Q = new_Q;
+		
+		next_Q[7] |= interval_timeout;
+		next_new_Q[7] |= interval_timeout;
+		
+		if ((stage == S_EXEC) && ex1_done) begin
+			// remember bits that have changed from 0 to 1 since last GET.
+			if ((ex1_data.i == get) && (ex1_data.zz == rQ)) begin
+				next_new_Q = next_Q & ~ex1_data.x.o;
+			end if ((ex1_data.i == put) && (ex1_data.xx == rQ)) begin
+				next_new_Q |= ex1_data.x.o & ~next_Q;
+				next_Q = ex1_data.x.o | next_new_Q;
+			end
+  		end
+  	end
 
-	always @(posedge clk, negedge reset_n)
+	always_ff @(posedge clk, negedge reset_n)
 		if (reset_n == 0) begin
 			stage <= S_RESET;
 			G <= 8'd32;
 			L <= 8'd0;
 			O <= 0;
 			S <= 0;
+			I <= 0;
+			Q <= 0;
+			new_Q <= 0;
 			next_addr <= 64'h8000fffffffffffc;
+			data <= 0;
 		end else begin
+			I <= next_I;
+			Q <= next_Q;
+			new_Q <= next_new_Q;
+			data <= next_data;
 			
 			regw = '{0, 0, 0};
 			
@@ -293,10 +345,7 @@ module cpu(
 			S_IFETCH:
 				begin
 					if (fetch_done) begin
-						if (dbg_sw[0])
-							stage <= S_STOP;
-						else
-							stage <= S_DISPATCH;
+						stage <= S_DISPATCH;
 						head <= f_head;
 						
 					end
@@ -310,7 +359,27 @@ module cpu(
 						no_fetch <= (dec_data.i > trip);
 						
 						if (dec_data.interim) begin
-							if (dec_data.op == UNSAVE) begin
+							if (dec_data.op == SAVE) begin
+								if (dec_data.i != incgamma) begin
+									case (dec_data.zz)
+									0: begin
+											head.inst <= pack_bytes(SAVE, dec_data.xx, G, 1);
+										end
+									1: begin
+											if (dec_data.yy == 255)
+												head.inst <= pack_bytes(SAVE, dec_data.xx, 0, 2);
+											else
+												head.inst <= pack_bytes(SAVE, dec_data.xx, dec_data.yy + 1, 1);
+										end
+									2: begin
+											if (dec_data.yy == rR)
+												head.inst <= pack_bytes(SAVE, dec_data.xx, rP, 2);
+											else
+												head.inst <= pack_bytes(SAVE, dec_data.xx, dec_data.yy + 1, 2);
+										end
+									endcase
+								end
+							end else if (dec_data.op == UNSAVE) begin
 								case (dec_data.xx)
 								0: begin
 										head.inst <= pack_bytes(UNSAVE, 1, rZ, 0 );
@@ -377,7 +446,10 @@ module cpu(
 					
 					if (data.interrupt[F_BIT]) begin
 						stage <= S_TRAP;
-						doing_interrupt <= 0;
+						doing_interrupt <= 4;
+					end else if (((Q & K) != 0) && (data.i != resum)) begin
+						stage <= S_TRAP;
+						doing_interrupt <= 7;
 					end else if (data.owner) begin
 						stage <= S_EXEC;
 					end else if (no_fetch) begin	//(no_fetch)
@@ -389,63 +461,52 @@ module cpu(
 							stage <= S_IFETCH;
 					end
 				end
-		//						8'hf7:	// PUTI
-		//							begin
-		//								stage = S_STORE_GREG;
-		//								case (xx)
-		//								19:	// G
-		//									begin
-		//										if ((z[63:8] != 0) || (z[7:0] < L) || (z[7:0] < 32))
-		//											begin
-		//												program_bits[B_BIT] = 1;
-		//												z = {56'b0, G};
-		//												stage = S_TRAP;
-		//											end
-		//										else if (z[7:0] < G)
-		//											begin
-		//												gregwe = 1;
-		//												gregwa = G - 1;
-		//												gregwd = 0;
-		//												G = G - 1;
-		//												stage = S_EXEC;
-		//											end
-		//									end
-		//								20:	// L
-		//									begin
-		//										if (z[63:8] != 0)
-		//											z = {56'b0, L};
-		//										else if (z[7:0] > L)
-		//											z[7:0] = L;
-		//									end
-		//								default:
-		//									begin
-		//									end
-		//								endcase
-		//
-		//								x = z;
-		//							end
 			S_TRAP:
 				begin
 					case (doing_interrupt)
-					0: begin
-							next_addr <= operands.ra.o;
-							regw = '{ 2'b01, rK, 0 };
+					// dynamic trap entry point
+					7: begin
+							doing_interrupt <= doing_interrupt - 1;
 						end
-					1:	
-						regw = '{ 2'b01, rWW, data.go.o };
-					2:
-						regw = '{ 2'b01, rXX, { data.interrupt[26:19], 24'b0, data.op, data.xx, data.yy, data.zz} };
-					3:
-						regw = '{ 2'b01, rYY, operands.y.o };
-					4:
-						regw = '{ 2'b01, rZZ, operands.z.o };
-					5:
-						if (dbg_sw[9])
-							stage <= S_STOP;
-						else
-							stage <= S_IFETCH;
+					6: begin
+							if (operands.b.valid) begin
+								regw = '{ 2'b01, rBB, operands.b.o };
+								doing_interrupt <= doing_interrupt - 1;
+							end
+						end
+					5: begin
+							regw = '{ 2'b01, 255, J };
+							doing_interrupt <= doing_interrupt - 1;
+						end
+					// forced trap entry point
+					4: begin
+							if (operands.ra.valid) begin
+								next_addr <= operands.ra.o;
+								regw = '{ 2'b01, rK, 0 };
+								doing_interrupt <= doing_interrupt - 1;
+							end
+						end
+					3:	begin
+							regw = '{ 2'b01, rWW, data.go.o };
+							doing_interrupt <= doing_interrupt - 1;
+						end
+					2: begin
+							regw = '{ 2'b01, rXX, { data.interrupt[26:19], 24'b0, data.op, data.xx, data.yy, data.zz} };
+							doing_interrupt <= doing_interrupt - 1;
+						end
+					1: begin
+							regw = '{ 2'b01, rYY, operands.y.o };
+							doing_interrupt <= doing_interrupt - 1;
+						end
+  					0: begin
+							regw = '{ 2'b01, rZZ, operands.z.o };
+							
+							if (dbg_sw[9] || ~next_addr[63])
+								stage <= S_STOP;
+							else
+								stage <= S_IFETCH;
+						end
 					endcase
-					doing_interrupt <= doing_interrupt + 1'b1;
 				end
 			S_HALT:
 				begin
@@ -454,7 +515,7 @@ module cpu(
 			S_STOP:
 				begin
 					if (prev_btn1 & ~btn1) begin
-						stage <= S_DISPATCH;
+						stage <= S_IFETCH;
 					end else begin
 						stage <= S_STOP;
 					end

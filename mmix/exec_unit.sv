@@ -34,6 +34,7 @@ module exec_unit (
 	input  logic[7:0]		G, L,
 	input  logic[60:0]	O, S,
 	input  logic[63:0]	P,
+	input  logic[63:0]	new_Q,
 	
 	output logic			done,
 	output control			data_out,
@@ -67,6 +68,7 @@ module exec_unit (
 		.enable	(exec_enable),
 		
 		.G, .L,
+		.new_Q,
 		.data_in		(data),
 		.operands,
 		
@@ -115,6 +117,7 @@ module al_unit(
 	input  logic		enable,
 	
 	input  logic[7:0]		G, L,
+	input  logic[63:0]	new_Q,
 
 	input  control			data_in,
 	input  values			operands,
@@ -300,12 +303,10 @@ module al_unit(
 //				  page_b[1] = (rv.l >> 20) & 0xf;
 //				}
 //				break;
-//			      case rQ:
-//				new_Q.h |= data->z.o.h & ~g[rQ].o.h;
-//				new_Q.l |= data->z.o.l & ~g[rQ].o.l;
-//				data->z.o.l |= new_Q.l;
-//				data->z.o.h |= new_Q.h;
-//				break;
+				// handled by cpu.sv
+//				rQ: begin
+//						data.x.o = operands.z.o | new_Q;
+//					end
 //			      case rL:
 //				if (data->z.o.h != 0)
 //				  data->z.o.h = 0, data->z.o.l = g[rL].o.l;
@@ -358,7 +359,7 @@ module al_unit(
 				data.interrupt[F_BIT] = 1;
 				data.a.o = operands.b.o;
 			end
-		resum: begin
+		resume, resum: begin
 //							data.go = '{ WW, 1, 0, 0};
 //							data.a = '{ g255, 1, 2'b01, rK };
 //							data.x = '{ rBB, 1, 2'b01, 255 };
@@ -495,7 +496,12 @@ module ld_st_unit(
 					ld: begin
 							next_state = S_MEMREAD;
 						end
-					st, incgamma: begin
+					st, incgamma, sav: begin
+							next_state = S_MEMWRITE;
+						end
+					save: begin
+							data.b.o = { G, 24'b0, operands.ra.o[31:0] };
+							data.a.o = data.z.o;
 							next_state = S_MEMWRITE;
 						end
 					pst: begin
@@ -530,6 +536,11 @@ module ld_st_unit(
 						(CSWAP>>1):
 							//if (mem_readdata == P)
 							data.x.o = 1;
+//						(SAVE>>1):
+//							if (~data.interim) begin
+//								data.b.o = { G, 24'b0, operands.ra.o[31:0] };
+//								data.a.o = data.z.o;
+//							end
 					endcase
 					
 					done = 1;

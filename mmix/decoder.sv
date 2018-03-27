@@ -27,7 +27,7 @@ module inst_decoder(
 	input	fetch			head,
 	input wire [7:0]	G, L,
 	input wire [60:0]	S, O,
-	input logic[63:0]	J,
+	input logic[63:0]	J, I, Q,
 	
 	output logic		stall,
 //	
@@ -79,7 +79,7 @@ module inst_decoder(
 		0, 0, 0, 0, 0, 0, 0, 0, // FMUL, FCMPE, FUNE, FEQLE, FDIV, FSQRT, FREM, FINT,
 		0, 0, 0, 0, 0, 0, 0, 0, // MUL, MULI, MULU, MULUI, DIV, DIVI, DIVU, DIVUI,
 		1, 1, 1, 1, 1, 1, 1, 1, // ADD, ADDI, ADDU, ADDUI, SUB, SUBI, SUBU, SUBUI,
-		0, 0, 0, 0, 0, 0, 0, 0, // IIADDU, IIADDUI, IVADDU, IVADDUI, VIIIADDU, VIIIADDUI, XVIADDU, XVIADDUI,
+		1, 1, 1, 1, 1, 1, 1, 1, // IIADDU, IIADDUI, IVADDU, IVADDUI, VIIIADDU, VIIIADDUI, XVIADDU, XVIADDUI,
 		1, 1, 1, 1, 1, 1, 1, 1, // CMP, CMPI, CMPU, CMPUI, NEG, NEGI, NEGU, NEGUI,
 		1, 1, 1, 1, 1, 1, 1, 1, // SL, SLI, SLU, SLUI, SR, SRI, SRU, SRUI,
 		1, 1, 1, 1, 1, 1, 1, 1, // BN, BNB, BZ, BZB, BP, BPB, BOD, BODB,
@@ -105,7 +105,7 @@ module inst_decoder(
 		1, 1, 1, 1, 1, 1, 1, 1, // SETH, SETMH, SETML, SETL, INCH, INCMH, INCML, INCL,
 		1, 1, 1, 1, 1, 1, 1, 1, // ORH, ORMH, ORML, ORL, ANDNH, ANDNMH, ANDNML, ANDNL,
 		1, 1, 1, 1, 1, 1, 1, 1, // JMP, JMPB, PUSHJ, PUSHJB, GETA, GETAB, PUT, PUTI,
-		1, 1, 0, 1, 0, 0, 1, 1  // POP, RESUME, SAVE, UNSAVE, SYNC, SWYM, GET, TRIP
+		1, 1, 1, 1, 0, 0, 1, 1  // POP, RESUME, SAVE, UNSAVE, SYNC, SWYM, GET, TRIP
 	};
 	
 	// 'h01 means Z is an immediate value
@@ -205,6 +205,7 @@ module inst_decoder(
 	// labels
 	logic pop_unsave;
 	logic decrease_gamma;
+	logic increase_gamma;
 	
 	spec	yy_y;
 	spec zz_z;
@@ -226,6 +227,7 @@ module inst_decoder(
 	
 		pop_unsave = 0;
 		decrease_gamma = 0;
+		increase_gamma = 0;
 		
 		stall = 0;
 		
@@ -294,14 +296,14 @@ module inst_decoder(
 		
 		if (f & X_is_dest_bit) begin
 			if (data.xx >= G) begin
-				if (i != pushgo && i != pushj && i != cswap)
+				if (i != pushgo && i != pushj) // && i != cswap)
 					data.ren_x = 1;
 					data.x = '{0, 0, 2'b01, data.xx};
 			end else if (data.xx < L) begin
-				if (i != cswap) begin
+//				if (i != cswap) begin
 					data.ren_x = 1;
 					data.x = '{0, 0, 2'b10, (O + data.xx) & lring_mask };
-				end
+//				end
 			end
 		end
 		
@@ -447,6 +449,8 @@ module inst_decoder(
 						rS: data.z.o = S << 3;
 						rG: data.z.o = G;
 						rL: data.z.o = L;
+						rI: data.z.o = I;
+						rQ: data.z.o = Q;
 						default: data.z = '{0, 2'b01, data.zz };
 						endcase
 					end
@@ -598,6 +602,52 @@ module inst_decoder(
 						endcase
 					end
 				end
+			save: begin
+					if (data.xx < G) begin
+						data.interrupt[B_BIT] = 1;
+						data.i = noop;
+					end else begin
+						if (((S - O - L - 1) & lring_mask) == 0) begin
+							increase_gamma = 1;
+						end else begin
+							data.interim = 1;
+							data.i = sav;
+							case (data.zz)
+							0: begin
+									data.ren_x = 1;
+									data.x = '{ L, 1, 2'b10, (O + L) & lring_mask };
+									new_L = 0;
+									new_O = O + L + 1;
+								end
+							1, 2: begin
+									if (O != S) begin
+										increase_gamma = 1;
+									end else begin
+										op = STOU;
+										// cool->mem_x = true, spec_install (&mem, &cool->x);
+										data.z.o = O << 3;
+										new_S = O + 1;
+										new_O = new_S;
+										if ((data.zz == 2) && (data.yy > rZ)) begin
+											data.i = save;
+											data.interim = 0;
+											data.ren_a = 1;
+											data.a = '{ 0, 0, 2'b01, data.xx };
+											data.ra = '{ 0, 2'b01, rA };
+										end else begin
+											data.b = '{ 0, 2'b01, data.yy };
+										end
+									end
+								end
+							default: begin
+									data.interim = 0;
+									data.i = noop;
+									data.interrupt[B_BIT] = 1;
+								end
+							endcase
+						end
+					end
+				end
 			endcase
 		
 		end
@@ -645,6 +695,21 @@ module inst_decoder(
 //			data.need_b = 0;
 			data.ren_x = 1;
 			data.interim = 1;
+		end
+		
+		if (increase_gamma) begin
+			// @<Insert an instruction to advance gamma@>=
+			data.b = '{ 0, 2, S & lring_mask };
+			data.ra = '{0, 0, 0};
+			data.i = incgamma;
+			new_S = S + 1;
+			data.y = '{ S << 3, 0, 0 };
+			data.z = '{ 0, 0, 0 };
+			//data.mem_x = 1;
+			data.x = '{ 0, 0, 0, 0 };
+			op = STOU;
+			data.interim = 1;
+			//data.stack_alert = 1;
 		end
 		
 	end
