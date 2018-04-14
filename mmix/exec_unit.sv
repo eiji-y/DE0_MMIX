@@ -496,11 +496,17 @@ module ld_st_unit(
 					ld: begin
 							next_state = S_MEMREAD;
 						end
-					st, incgamma, sav: begin
+					st, incgamma: begin
 							next_state = S_MEMWRITE;
 						end
+					sav: begin
+							if (data.zz == 0)
+								done = 1;
+							else
+								next_state = S_MEMWRITE;
+						end
 					save: begin
-							data.b.o = { G, 24'b0, operands.ra.o[31:0] };
+//							data.b.o = { G, 24'b0, operands.ra.o[31:0] };
 							data.a.o = data.z.o;
 							next_state = S_MEMWRITE;
 						end

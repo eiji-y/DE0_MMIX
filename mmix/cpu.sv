@@ -265,9 +265,7 @@ module cpu(
 				end
 			end
 		S_EXEC: begin
-				if (ex1_done) begin
-					next_data = ex1_data;
-				end
+				next_data = ex1_data;
 			end
 		S_TRAP: begin
 				if (doing_interrupt == 7) begin

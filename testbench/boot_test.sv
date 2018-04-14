@@ -48,8 +48,6 @@ module boot_test(
 			if (mmix_read == 1) begin
 				if (mmix_address == 'h58)
 					$stop;
-				if (mmix_address == 'h94)
-					$stop;
 				mmix_readdata = mem_read(mmix_datasize, mmix_address);
 				break;
 			end else if (mmix_write == 1) begin

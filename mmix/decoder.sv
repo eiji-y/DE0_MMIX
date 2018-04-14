@@ -612,6 +612,8 @@ module inst_decoder(
 						end else begin
 							data.interim = 1;
 							data.i = sav;
+							// prefetch RA
+							data.ra = '{ 0, 2'b01, rA };
 							case (data.zz)
 							0: begin
 									data.ren_x = 1;
@@ -633,7 +635,7 @@ module inst_decoder(
 											data.interim = 0;
 											data.ren_a = 1;
 											data.a = '{ 0, 0, 2'b01, data.xx };
-											data.ra = '{ 0, 2'b01, rA };
+											data.b = { { G, 24'b0, operands.ra.o[31:0] }, 2'b00, 8'b0 };
 										end else begin
 											data.b = '{ 0, 2'b01, data.yy };
 										end
