@@ -237,13 +237,17 @@ module al_unit(
 					data.x.o = 64'h0000000000000000;
 			end
 			
+		zset: begin
+				if (register_truth(operands.y.o, data.op))
+				  data.x.o = operands.z.o;
+			end
+			
 		cset: begin
 				if (register_truth(operands.y.o, data.op))
 				  data.x.o = operands.z.o;
 				else
 				  data.x.o = operands.b.o;
 			end
-
 			
 		br, pbr: begin
 				if (register_truth(operands.b.o, data.op))
