@@ -528,6 +528,11 @@ module ld_st_unit(
 					decgamma, unsav: begin
 							next_state = S_MEMREAD;
 						end
+						
+					ldvts, sync: begin
+						done = 1;
+						end
+						
 					endcase
 				end
 			end

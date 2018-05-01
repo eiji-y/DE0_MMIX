@@ -93,7 +93,7 @@ module inst_decoder(
 		1, 1, 1, 1, 1, 1, 1, 1, // LDB, LDBI, LDBU, LDBUI, LDW, LDWI, LDWU, LDWUI,
 		1, 1, 1, 1, 1, 1, 1, 1, // LDT, LDTI, LDTU, LDTUI, LDO, LDOI, LDOU, LDOUI,
 		0, 0, 0, 0, 1, 1, 0, 0, // LDSF, LDSFI, LDHT, LDHTI, CSWAP, CSWAPI, LDUNC, LDUNCI,
-		0, 0, 0, 0, 0, 0, 1, 1, // LDVTS, LDVTSI, PRELD, PRELDI, PREGO, PREGOI, GO, GOI,
+		1, 1, 0, 0, 0, 0, 1, 1, // LDVTS, LDVTSI, PRELD, PRELDI, PREGO, PREGOI, GO, GOI,
 		1, 1, 1, 1, 1, 1, 1, 1, // STB, STBI, STBU, STBUI, STW, STWI, STWU, STWUI,
 		1, 1, 1, 1, 1, 1, 1, 1, // STT, STTI, STTU, STTUI, STO, STOI, STOU, STOUI,
 		0, 0, 0, 0, 1, 1, 0, 0, // STSF, STSFI, STHT, STHTI, STCO, STCOI, STUNC, STUNCI,
@@ -105,7 +105,7 @@ module inst_decoder(
 		1, 1, 1, 1, 1, 1, 1, 1, // SETH, SETMH, SETML, SETL, INCH, INCMH, INCML, INCL,
 		1, 1, 1, 1, 1, 1, 1, 1, // ORH, ORMH, ORML, ORL, ANDNH, ANDNMH, ANDNML, ANDNL,
 		1, 1, 1, 1, 1, 1, 1, 1, // JMP, JMPB, PUSHJ, PUSHJB, GETA, GETAB, PUT, PUTI,
-		1, 1, 1, 1, 0, 0, 1, 1  // POP, RESUME, SAVE, UNSAVE, SYNC, SWYM, GET, TRIP
+		1, 1, 1, 1, 1, 0, 1, 1  // POP, RESUME, SAVE, UNSAVE, SYNC, SWYM, GET, TRIP
 	};
 	
 	// 'h01 means Z is an immediate value
@@ -296,7 +296,7 @@ module inst_decoder(
 		
 		if (f & X_is_dest_bit) begin
 			if (data.xx >= G) begin
-				if (i != pushgo && i != pushj) // && i != cswap)
+//				if (i != pushgo && i != pushj) // && i != cswap)
 					data.ren_x = 1;
 					data.x = '{0, 0, 2'b01, data.xx};
 			end else if (data.xx < L) begin
@@ -649,6 +649,9 @@ module inst_decoder(
 							endcase
 						end
 					end
+				end
+			sync: begin
+				// not yet.
 				end
 			endcase
 		

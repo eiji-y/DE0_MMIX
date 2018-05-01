@@ -445,13 +445,13 @@ module cpu(
 					if (data.interrupt[F_BIT]) begin
 						stage <= S_TRAP;
 						doing_interrupt <= 4;
-					end else if (((Q & K) != 0) && (data.i != resum)) begin
-						stage <= S_TRAP;
-						doing_interrupt <= 7;
 					end else if (data.owner) begin
 						stage <= S_EXEC;
 					end else if (no_fetch) begin	//(no_fetch)
 						stage <= S_DISPATCH;
+					end else if (((Q & K) != 0) && (data.i != resum)) begin
+						stage <= S_TRAP;
+						doing_interrupt <= 7;
 					end else begin
 						if (dbg_sw[0])
 							stage <= S_STOP;
